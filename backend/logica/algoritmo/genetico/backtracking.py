@@ -16,6 +16,7 @@ def backtrack(stats: Stats,
               best: dict):
     # pos = índice de slot a llenar (1..N-1). Slot 0 ya está fijo (anchor).
     stats.nodes_expanded += 1
+    print("ejecutando back")
     stats.depth_expansions[pos] = stats.depth_expansions.get(pos, 0) + 1
 
     # ¿completamos todos los slots?
