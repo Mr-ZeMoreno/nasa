@@ -1,0 +1,231 @@
+/* Reset y configuración base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+  line-height: 1.6;
+  color: #1a1a1a;
+  overflow-x: hidden;
+}
+
+/* Contenedor principal */
+.container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Sección izquierda */
+.left-section {
+  flex: 1;
+  background: linear-gradient(
+      135deg,
+      rgba(30, 58, 138, 0.85) 0%,
+      rgba(76, 29, 149, 0.85) 50%,
+      rgba(30, 27, 75, 0.9) 100%
+    ), url("https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1920&h=1080&fit=crop") center / cover
+    no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  position: relative;
+}
+
+.left-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 30%),
+    radial-gradient(circle at 80% 70%, rgba(147, 51, 234, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Sección derecha */
+.right-section {
+  flex: 1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+/* Contenido */
+.content {
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Título */
+.title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  text-wrap: balance;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Updated description styling for right section */
+.description {
+  font-size: 1.125rem;
+  color: #374151;
+  margin-bottom: 2.5rem;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+/* Added form section styles */
+.form-section {
+  background: #f9fafb;
+  padding: 5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-content {
+  max-width: 600px;
+  width: 100%;
+}
+
+/* Section title styling */
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 2rem;
+  text-wrap: balance;
+}
+
+.space-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4c1d95;
+  box-shadow: 0 0 0 3px rgba(76, 29, 149, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Botones CTA */
+.btn {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-primary {
+  background: #4c1d95;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
+}
+
+.btn-primary:hover {
+  background: #5b21b6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(76, 29, 149, 0.4);
+}
+
+.btn-submit {
+  background: #4c1d95;
+  color: #ffffff;
+  margin-top: 1rem;
+}
+
+.btn-submit:hover {
+  background: #5b21b6;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(76, 29, 149, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .left-section,
+  .right-section {
+    min-height: 50vh;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .description {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 2rem;
+  }
+
+  .left-section,
+  .right-section {
+    padding: 3rem 1.5rem;
+  }
+
+  .form-section {
+    padding: 3rem 1.5rem;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
