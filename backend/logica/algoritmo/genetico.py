@@ -144,21 +144,72 @@ if __name__ == "__main__":
     rooms = ["Baño","Cocina","Ejercicio","Recreación","Dormir","Mantención"]
 
     # Prohibiciones (adyacencia 0)
-    zero_pairs = [
-        ("Baño","Cocina"),        # no vecinos
-        ("Dormir","Ejercicio")    # no vecinos
-    ]
+    zero_pairs = {
+    # Comedor / mesa común lejos de residuos y sanitarios
+    ("Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)", 
+    "Human Waste-1 (Waste Collection)"),
+    ("Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)", 
+    "Human Waste-2 (Cleansing) / Hygiene-1 (Cleansing)"),
+    ("Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)", 
+    "Waste Management"),
+
+    # Cocina lejos de residuos/sanitarios
+    ("Meal Preparation-1 (Food Prep)", "Human Waste-1 (Waste Collection)"),
+    ("Meal Preparation-1 (Food Prep)", "Waste Management"),
+    ("Meal Preparation-2 (Work Surface)", "Human Waste-1 (Waste Collection)"),
+    ("Meal Preparation-2 (Work Surface)", "Waste Management"),
+
+    # Sueño/relax lejos de ruido: ejercicio y área social abierta
+    ("Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)", 
+    "Exercise-1 (Cycle Ergometer)"),
+    ("Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)", 
+    "Exercise-2 (Treadmill)"),
+    ("Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)", 
+    "Exercise-3 (Resistive Device)"),
+    ("Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)", 
+    "Group Social-1 (Open Area) / Mission Planning-3 (Training)"),
+    }
+
 
     # Preferencias (>1). Por defecto, lo no listado vale 1.
-    prefs = {
-        ("Mantención","Cocina"): 5,
-        ("Mantención","Baño"): 4,
-        ("Mantención","Recreación"): 4,
-        ("Mantención","Ejercicio"): 3,
-        ("Dormir","Recreación"): 3,
-        ("Baño","Ejercicio"): 2,
-        ("Cocina","Recreación"): 2,
+    preferences = {
+  # Módulo social "Open Area" cerca del de "Table": dos zonas comunes complementarias
+  ("Group Social-1 (Open Area) / Mission Planning-3 (Training)",
+   "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)"): 2,
+
+  # Cadena de comida: preparación ↔ mesa
+  ("Meal Preparation-1 (Food Prep)",
+   "Meal Preparation-2 (Work Surface)"): 3,
+  ("Meal Preparation-1 (Food Prep)",
+   "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)"): 3,
+  ("Meal Preparation-2 (Work Surface)",
+   "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)"): 2,
+
+  # Higiene sanitaria: aseo junto a recolección de desechos humanos
+  ("Human Waste-1 (Waste Collection)",
+   "Human Waste-2 (Cleansing) / Hygiene-1 (Cleansing)"): 3,
+
+  # Mantenimiento / logística: banco de trabajo junto al estowage
+  ("Maintenance-2 (Work Surface) / Logistics-1 (Work Surface) / EVA-1 (Suit Testing)",
+   "Logistics-2 (Temporary Stowage)"): 3,
+
+  # Puestos de ordenador: operaciones juntos
+    ("Maintenance-1 (Computer) / EVA-2 (EVA Computer/Data)",
+    "Mission Planning-2 (Computer/Command) / Spacecraft Monitoring"): 2,
+
+    # Área médica: PC médico cerca de área de práctica médica
+    ("Medical-1 (Computer)", "Medical-3 (Medical Care)"): 2,
+
+    # Habitaciones privadas: escritorio/atención ambulatoria cerca de dormir/relax
+    ("Private Habitation-1 (Work Surface) / Medical-2 (Ambulatory Care)",
+    "Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)"): 2,
+
+    # Gimnasio: aparatos entre sí (suelo de ejercicio)
+    ("Exercise-1 (Cycle Ergometer)", "Exercise-2 (Treadmill)"): 2,
+    ("Exercise-2 (Treadmill)", "Exercise-3 (Resistive Device)"): 2,
+    ("Exercise-1 (Cycle Ergometer)", "Exercise-3 (Resistive Device)"): 2,
     }
+
 
     A, idx = build_matrix(rooms, zero_pairs, prefs, default_weight=1)
 
