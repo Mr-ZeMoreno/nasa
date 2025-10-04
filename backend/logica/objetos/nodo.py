@@ -1,4 +1,7 @@
 from __future__ import annotations
+from typing import Dict, List, Self, Tuple
+
+from objetos.objeto import Objeto
 
 
 
@@ -6,17 +9,20 @@ class Nodo:
     def __init__(self, id) -> None:
         self.id = id
         self.objeto = None
-        self.peso = None
-        self.adyacencia: list[Nodo | None] = [None]  * 6
-        self.index = [i for i in range(7)]
+        self.prefs = []
+        self.restriccion = []
 
-    def add_nodo(self, nodo: Nodo):
-        self.adyacencia[self.index.pop()] = nodo
+    def add_objeto(self, objeto: Objeto) -> Self:
+        self.objeto = objeto
+        return self
 
-    def eliminar_nodo(self, nodo: Nodo):
-        i = self.adyacencia.index(nodo)
-        self.adyacencia[i] = None
-        self.index.append(i)
+    def add_pref(self, nodo):
+        self.prefs.append(nodo)
+        return self
+    
+    def add_restriccion(self, nodo):
+        self.restriccion.append(nodo)
+        return self
 
     def __eq__(self, value: Nodo) -> bool:
         return self.id == value.id
@@ -26,5 +32,32 @@ class Nodo:
 
 
 
-def adyacencia(nodo_pivote: Nodo):
-    pass
+def matriz_adyacencia(rooms: List[str],
+                 zero_pairs: List[Tuple[str,str]],
+                 prefs: Dict[Tuple[str,str], int],
+                 default_weight:int=1):
+    """
+    Crea A (NxN) simétrica:
+      - default_weight para pares no especificados
+      - 0 para pares prohibidos (zero_pairs)
+      - pesos personalizados en 'prefs'
+    """
+    n = len(rooms)
+    idx = {r:i for i,r in enumerate(rooms)}
+    A = [[default_weight for _ in range(n)] for __ in range(n)]
+    for i in range(n):
+        A[i][i] = 0  # no nos interesa i~i
+
+    # pares prohibidos
+    for a,b in zero_pairs:
+        ia, ib = idx[a], idx[b]
+        A[ia][ib] = 0
+        A[ib][ia] = 0
+
+    # preferencias
+    for (a,b), w in prefs.items():
+        ia, ib = idx[a], idx[b]
+        A[ia][ib] = w
+        A[ib][ia] = w
+
+    return A, idx
