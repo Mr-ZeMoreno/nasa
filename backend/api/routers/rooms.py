@@ -1,0 +1,71 @@
+from enum import Enum
+from typing import Optional
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+from api.logica.objetos.hexagono import piso
+PREFIX = "/rooms"
+
+router = APIRouter(prefix=f"{PREFIX}",
+                   tags=["Usuarios"])
+
+
+class Habitats(Enum):
+    luna = "luna"
+    marte = "marte"
+
+
+class Cilindro(BaseModel):
+    longitud: float
+    diametro: float
+
+
+class Domo(BaseModel):
+    diametro: float
+
+
+class TipoGeom(Enum):
+    cilindro = "cilindro"
+    esfera = "domo"
+
+
+class Geom(BaseModel):
+    cilindro: Optional[Cilindro]
+    domo: Optional[Domo]
+
+
+class Formulario(BaseModel):
+    nombre: str
+    habitat: Habitats
+    tripulantes: int
+    tipo_geometria: TipoGeom
+    geometria: Geom
+    prioridad: list
+    mantenimiento: bool
+    soporte_vital: bool
+    notas: str
+
+
+@router.post("/")
+def obtener_piso(payload: Formulario):
+    # hacer algo y entregar matriz
+    matriz = piso(1)
+
+    return matriz
+
+
+@router.get("/{id}")
+def obtener_room_data():
+    return {
+        "room": "baño-1",
+        "contenido": [
+            "Changing Volume",
+            "Limpieza Facial",
+            "Corta uñas",
+            "Limpieza de cuerpo completo",
+            "Limpieza de manos",
+            "Higiene Bucal",
+            "PW SA",
+            "Shaving"
+        ]
+    }

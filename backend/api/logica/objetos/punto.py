@@ -1,4 +1,5 @@
-from libreria.tipos import coordenada
+from logica.libreria.tipos import coordenada
+
 
 class Punto:
     def __init__(self, m: list[list[int | float]]) -> None:
@@ -12,7 +13,7 @@ class Punto:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def vector(self)-> list[coordenada]:
+    def vector(self) -> list[coordenada]:
         return [self.x, self.y, self.z]
 
     def get_tuple(self) -> tuple:
