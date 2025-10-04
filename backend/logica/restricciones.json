@@ -1,0 +1,134 @@
+{
+  "zero_pairs": [
+    [
+      "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)",
+      "Human Waste-1 (Waste Collection)"
+    ],
+    [
+      "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)",
+      "Human Waste-2 (Cleansing) / Hygiene-1 (Cleansing)"
+    ],
+    [
+      "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)",
+      "Waste Management"
+    ],
+    [
+      "Meal Preparation-1 (Food Prep)",
+      "Human Waste-1 (Waste Collection)"
+    ],
+    [
+      "Meal Preparation-1 (Food Prep)",
+      "Waste Management"
+    ],
+    [
+      "Meal Preparation-2 (Work Surface)",
+      "Human Waste-1 (Waste Collection)"
+    ],
+    [
+      "Meal Preparation-2 (Work Surface)",
+      "Waste Management"
+    ],
+    [
+      "Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)",
+      "Exercise-1 (Cycle Ergometer)"
+    ],
+    [
+      "Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)",
+      "Exercise-2 (Treadmill)"
+    ],
+    [
+      "Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)",
+      "Exercise-3 (Resistive Device)"
+    ],
+    [
+      "Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)",
+      "Group Social-1 (Open Area) / Mission Planning-3 (Training)"
+    ]
+  ],
+  "preferences": [
+    {
+      "pair": [
+        "Group Social-1 (Open Area) / Mission Planning-3 (Training)",
+        "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Meal Preparation-1 (Food Prep)",
+        "Meal Preparation-2 (Work Surface)"
+      ],
+      "weight": 3
+    },
+    {
+      "pair": [
+        "Meal Preparation-1 (Food Prep)",
+        "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)"
+      ],
+      "weight": 3
+    },
+    {
+      "pair": [
+        "Meal Preparation-2 (Work Surface)",
+        "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Human Waste-1 (Waste Collection)",
+        "Human Waste-2 (Cleansing) / Hygiene-1 (Cleansing)"
+      ],
+      "weight": 3
+    },
+    {
+      "pair": [
+        "Maintenance-2 (Work Surface) / Logistics-1 (Work Surface) / EVA-1 (Suit Testing)",
+        "Logistics-2 (Temporary Stowage)"
+      ],
+      "weight": 3
+    },
+    {
+      "pair": [
+        "Maintenance-1 (Computer) / EVA-2 (EVA Computer/Data)",
+        "Mission Planning-2 (Computer/Command) / Spacecraft Monitoring"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Medical-1 (Computer)",
+        "Medical-3 (Medical Care)"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Private Habitation-1 (Work Surface) / Medical-2 (Ambulatory Care)",
+        "Private Habitation-2 (Sleep & Relaxation) / Hygiene-2 (Non-Cleansing)"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Exercise-1 (Cycle Ergometer)",
+        "Exercise-2 (Treadmill)"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Exercise-2 (Treadmill)",
+        "Exercise-3 (Resistive Device)"
+      ],
+      "weight": 2
+    },
+    {
+      "pair": [
+        "Exercise-1 (Cycle Ergometer)",
+        "Exercise-3 (Resistive Device)"
+      ],
+      "weight": 2
+    }
+  ]
+}
