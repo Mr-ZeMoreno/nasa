@@ -55,9 +55,9 @@ if __name__ == "__main__":
         "Mantención",  # ancla para romper simetría (ojo con la tilde y el nombre exacto)
         "Meal Preparation-1 (Food Prep)",
         "Meal Preparation-2 (Work Surface)",
-        "Group Social-2 (Table) / Meal Consumption / Mission Planning-1 (Table)",
+        "Medical-3 (Medical Care)",
         "Human Waste-1 (Waste Collection)",
-        "Human Waste-2 (Cleansing) / Hygiene-1 (Cleansing)",
+        "EVA-3 (Airlock) / Suit Donning & Pressurization"
     ]
     rooms_set = set(rooms)
 
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     # 4) Construye la matriz de adyacencia (por defecto, donde no hay preferencia explícita = 1)
     A, idx = matriz_adyacencia(rooms, zero_pairs, prefs, default_weight=1)
 
-    # 5) Ejecuta el backtracking con "Mantención" fija en el slot 0
-    best_perm, best_score, stats = solve_backtracking(rooms, A, anchor_room="Mantención")
+    # 5) Ejecuta el backtracking con "Mantención" fija en el slot 0 solo planta baja
+    best_perm, best_score, stats = solve_backtracking(rooms, A, anchor_room="EVA-3 (Airlock) / Suit Donning & Pressurization")
 
     # 6) Resultados
     best_layout = [rooms[i] for i in best_perm]
