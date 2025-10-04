@@ -1,0 +1,1 @@
+coordenada = int | float

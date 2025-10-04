@@ -1,85 +1,81 @@
-from typing import Self
-import numpy as np
+from __future__ import annotations
+from random import randint
+from objeto import Objeto
+from punto import Punto
+from tipos import coordenada
+from plotting import dibujar_interactivo
 
+class Adyacencia:
+    def __init__(self, m: list[list[Nodo | None]]) -> None:
+        self.arriba = m[0][0]
+        self.derecha = m[1][0]
+        self.abajo = m[2][0]
+        self.izquierda = m[3][0]
 
-coordenada = int | float
-
-class Punto:
-    def __init__(self, x: coordenada, y: coordenada, z: coordenada) -> None:
-        self.x = x
-        self.y = y
-        self.z = z
-    
-    def vector(self)-> list[coordenada]:
-        return [self.x, self.y, self.z]
-    
     def __str__(self) -> str:
-        return f"{[self.x, self.y, self.z]}"
-    
-    def __repr__(self) -> str:
-        return f"{[self.x, self.y, self.z]}"
+        return f"""
+\tArriba: {self.arriba}
+\tDerecha: {self.derecha}
+\tAbajo: {self.abajo}
+\tIzquierda: {self.izquierda}
+"""
 
-    def __eq__(self, value: Self) -> bool:
-        return self.vector() == value.vector()
+    def set_arriba(self, n: Nodo):
+        self.arriba = n
 
-class Objeto:
-    def __init__(self) -> None:
-        self.vertices: list[Punto] = []
-    
-    def add_vertice(self, punto: Punto) -> Self:
-        self.vertices.append(punto)
-        return self
-    
-    def remove_vertice(self, punto: Punto)->Self:
-        self.vertices.remove(punto)
-        return self
-    
-    def matriz(self) -> list[Punto]:
-        return [v for v in self.vertices]
-    
-    def transformar(self, matriz: list[int | float]) -> Self:
-        
-        return self
-    
-    def __str__(self) -> str:
-        return f"{self.matriz()}"
+    def set_abajo(self, n: Nodo):
+        self.abajo = n
 
-p1 = Punto(1,1,1)
-p2 = Punto(0,0,0)
+    def set_derecha(self, n: Nodo):
+        self.derecha = n
 
-o = Objeto().add_vertice(p1).add_vertice(p2)
+    def set_izquierda(self, n: Nodo):
+        self.izquierda = n
 
-print(o)
 
-o.remove_vertice(p2)
 
-print(o)
 
 class Nodo:
-    def __init__(self):
-        self.peso = None
-        self.nombre = None
-        self.objeto = None
-        
+    def __init__(self) -> None:
+        self.id = randint(100000, 999999)
+        self.adyacencia = Adyacencia([[None]] * 4)
 
-def adyacencia(nodo_pivote: Nodo):
-    pass
-# Un nodo se puede unir con máximo 6 nodos
-# La adyacencia debe mostrarse como matriz
-# ejemplo : 
-# b -> a
-# c -> a
-# d -> a
-# e -> a
-# f -> a
-# g -> a
-# 
-# adyacencia = [
-# [a, 1, 1, 1, 1, 1, 1],
-# [1, b, 0, 0, 0, 0, 0], 
-# [1, 0, c, 0, 0, 0, 0], 
-# [1, 0, 0, d, 0, 0, 0], 
-# [1, 0, 0, 0, e, 0, 0], 
-# [1, 0, 0, 0, 0, f, 0], 
-# [1, 0, 0, 0, 0, 0, g]
-#]
+    def set_arriba(self, nodo: Nodo):
+        self.adyacencia.set_arriba(nodo)
+        nodo.adyacencia.set_abajo(self)
+        return self
+
+    def set_abajo(self, nodo: Nodo):
+        self.adyacencia.set_abajo(nodo)
+        nodo.adyacencia.set_arriba(self)
+        return self
+
+    def set_derecha(self, nodo: Nodo):
+        self.adyacencia.set_derecha(nodo)
+        nodo.adyacencia.set_izquierda(self)
+        return self
+
+    def set_izquierda(self, nodo: Nodo):
+        self.adyacencia.set_izquierda(nodo)
+        nodo.adyacencia.set_derecha(self)
+        return self
+
+    def __str__(self) -> str:
+        return f"<Nodo ID: {self.id}>"
+
+
+piso = Objeto() \
+    .add_vertice(Punto([[1], [1], [0]])) \
+    .add_vertice(Punto([[0], [0], [0]])) \
+    .add_vertice(Punto([[0], [1], [0]])) \
+    .add_vertice(Punto([[1], [0], [0]])) \
+    .add_vertice(Punto([[1], [1], [1]])) \
+    .add_vertice(Punto([[0], [0], [1]])) \
+    .add_vertice(Punto([[0], [1], [1]])) \
+    .add_vertice(Punto([[1], [0], [1]]))
+
+
+nodo_piso = Nodo()
+print(piso)
+print(piso.largo, piso.ancho, piso.alto)
+dibujar_interactivo(piso)
