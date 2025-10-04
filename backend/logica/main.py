@@ -16,7 +16,7 @@ piso = Objeto() \
     .add_vertice(Punto([[1], [0], [1]]))
 
 
-nodo_piso = Nodo()
+nodo_piso = Nodo("piso")
 print(piso)
 print(piso.largo, piso.ancho, piso.alto)
 dibujar_interactivo(piso)
