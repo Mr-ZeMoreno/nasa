@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # 1) Carga restricciones completas (todas las rooms posibles)
     with open("restricciones.json", "r", encoding="utf-8") as f:
         data = json.load(f)
-
+    floor=1
     zero_pairs_all = data["zero_pairs"]
     prefs_all = data["preferences"]
 
@@ -69,7 +69,10 @@ if __name__ == "__main__":
     A, idx = matriz_adyacencia(rooms, zero_pairs, prefs, default_weight=1)
 
     # 5) Ejecuta el backtracking con "Mantención" fija en el slot 0 solo planta baja
-    best_perm, best_score, stats = solve_backtracking(rooms, A, anchor_room="EVA-3 (Airlock) / Suit Donning & Pressurization")
+    if floor==0:
+        best_perm, best_score, stats = solve_backtracking(rooms, A, anchor_room="EVA-3 (Airlock) / Suit Donning & Pressurization")
+    else:
+        best_perm, best_score, stats = solve_backtracking(rooms, A, anchor_room=rooms[0])
 
     # 6) Resultados
     best_layout = [rooms[i] for i in best_perm]
