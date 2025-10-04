@@ -49,15 +49,18 @@ def matriz_adyacencia(rooms: List[str],
         A[i][i] = 0  # no nos interesa i~i
 
     # pares prohibidos
-    for a,b in zero_pairs:
-        ia, ib = idx[a], idx[b]
+    for pair in zero_pairs:
+        ia, ib = idx[pair[0]], idx[pair[1]]
         A[ia][ib] = 0
         A[ib][ia] = 0
 
-    # preferencias
-    for (a,b), w in prefs.items():
-        ia, ib = idx[a], idx[b]
+    for p in prefs:
+        pair = p["pair"]
+        w = p["weight"]
+
+        ia, ib = idx[pair[0]], idx[pair[1]]
         A[ia][ib] = w
         A[ib][ia] = w
+        
 
     return A, idx
