@@ -2,293 +2,138 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Configura tu Hábitat - HabitatX</title>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-
-  <!-- Mismos estilos compartidos -->
-  <link rel="stylesheet" href="Styles/formStyle.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formulario - Your Home in the Space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles/formStyle.css" />
 </head>
 <body>
-  <!-- Solo la sección del diseñador/formulario -->
-  <section class="designer" id="designer">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label">Formulario</div>
-        <h2>Configura tu Hábitat</h2>
-        <p>Define prioridades y geometría; guardaremos todo para el diseñador</p>
-      </div>
-
-      <div class="designer-grid">
-        <!-- Formulario -->
-        <div class="card">
-          <form id="habitat-form" class="form-grid" autocomplete="off">
-            <div class="form-row">
-              <div>
-                <label for="nombre">Nombre del proyecto</label>
-                <input type="text" id="nombre" placeholder="Mi hábitat espacial" required />
-              </div>
-              <div>
-                <label for="tipo">Tipo de hábitat</label>
-                <select id="tipo" required>
-                  <option value="">Selecciona</option>
-                  <option value="estacion">Estación espacial</option>
-                  <option value="lunar">Base lunar</option>
-                  <option value="marciana">Colonia marciana</option>
-                  <option value="orbital">Hábitat orbital</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div>
-                <label for="capacidad">Capacidad de tripulación</label>
-                <input type="number" id="capacidad" min="1" step="1" placeholder="Nº personas" required />
-              </div>
-              <div>
-                <label for="shape">Geometría del hábitat</label>
-                <select id="shape" required>
-                  <option value="">Selecciona geometría</option>
-                  <option value="cylinder">Cilindro</option>
-                  <option value="sphere">Esfera</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Dimensiones dinámicas -->
-            <div class="form-row dims-row" id="dims-cylinder" style="display:none;">
-              <div>
-                <label for="length">Longitud (m)</label>
-                <input type="number" id="length" min="0.1" step="0.01" placeholder="Ej. 12.0"/>
-              </div>
-              <div>
-                <label for="diameter">Diámetro (m)</label>
-                <input type="number" id="diameter" min="0.1" step="0.01" placeholder="Ej. 6.0"/>
-              </div>
-            </div>
-
-            <div id="dims-sphere" style="display:none;">
-              <label for="sphereDiameter">Diámetro de la esfera (m)</label>
-              <input type="number" id="sphereDiameter" min="0.1" step="0.01" placeholder="Ej. 7.0"/>
-            </div>
-
-            <!-- Prioridades Drag & Drop -->
-            <div>
-              <label>Prioriza tus áreas funcionales (arrastra para ordenar)</label>
-              <ul id="priorityList" class="priority-list">
-                <li draggable="true" data-id="sleep">Sueño <span class="pill">crew/escala</span></li>
-                <li draggable="true" data-id="hygiene">Higiene <span class="pill">crew/escala</span></li>
-                <li draggable="true" data-id="galley">Cocina/Alimentos <span class="pill">crew/escala</span></li>
-                <li draggable="true" data-id="recreation">Recreación <span class="pill">opcional</span></li>
-                <li draggable="true" data-id="exercise">Ejercicio <span class="pill">por-peldaños</span></li>
-                <li draggable="true" data-id="maintenance">Mantenimiento/Repair <span class="pill">volumen fijo</span></li>
-              </ul>
-            </div>
-
-            <!-- Módulos fijos -->
-            <div class="form-row">
-              <div>
-                <label>Módulos fijos (no escalan con tripulación)</label>
-                <div style="display:grid; gap:8px; margin-top:6px;">
-                  <label><input type="checkbox" class="fixed-check" data-id="maintenance" data-vol="4" checked/> Mantenimiento/Repair (~4 m³)</label>
-                  <label><input type="checkbox" class="fixed-check" data-id="eclss" data-vol="6" checked/> Soporte vital/ECLSS (~6 m³)</label>
-                </div>
-              </div>
-              <div>
-                <label for="notas">Notas / objetivos</label>
-                <textarea id="notas" placeholder="P.ej., misión 60 días Luna, foco en ejercicio y privacidad de sueño"></textarea>
-              </div>
-            </div>
-
-            <div class="btn-row">
-              <button type="submit" class="btn">Guardar configuración</button>
-              <button type="button" id="resetBtn" class="btn secondary">Restablecer</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Métricas -->
-        <div class="card">
-          <h3 style="margin-bottom:0.8rem;color:var(--color-primary)">Métricas en vivo</h3>
-          <div class="metrics-card">
-            <div class="metric"><span>Volumen presurizado (m³)</span><strong id="mVol">—</strong></div>
-            <div class="metric"><span>Área superficial (m²)</span><strong id="mArea">—</strong></div>
-            <div class="metric"><span>Relación S/V (1/m)</span><strong id="mSV">—</strong></div>
-            <div class="metric"><span>Volumen fijo reservado (m³)</span><strong id="mFixed">0.00</strong></div>
-            <div class="metric"><span>NHV estimado (m³)</span><strong id="mNHV">—</strong></div>
-            <div class="metric"><span>NHV por tripulante (m³/persona)</span><strong id="mNHVpp">—</strong></div>
-          </div>
-          <p style="margin-top:0.8rem; color:var(--color-text-muted); font-size:0.9rem;">
-            <em>NHV</em> (Net Habitable Volume) ≈ Vpres − Vol. fijo − 15% equipamiento general.
-          </p>
-        </div>
-      </div>
+  <div class="form-container">
+    <div class="form-header">
+      <h1 class="form-title">Cuéntanos sobre tu proyecto</h1>
+      <p class="form-subtitle">
+        Completa los siguientes datos para comenzar a diseñar tu hábitat espacial
+      </p>
     </div>
-  </section>
 
-  <script>
-    /* ========= Formulario + Cálculos + LocalStorage ========= */
-    (function () {
-      const form = document.getElementById('habitat-form');
-      const nombre = document.getElementById('nombre');
-      const tipo = document.getElementById('tipo');
-      const capacidad = document.getElementById('capacidad');
-      const shapeSel = document.getElementById('shape');
+    <form class="space-form">
+      <!-- Nombre -->
+      <div class="form-group">
+        <label for="nombre">Nombre del proyecto</label>
+        <input
+          type="text"
+          id="nombre"
+          name="nombre"
+          placeholder="Mi hábitat espacial"
+          required
+        />
+      </div>
 
-      const dimsCyl = document.getElementById('dims-cylinder');
-      const dimsSph = document.getElementById('dims-sphere');
-      const iLen = document.getElementById('length');
-      const iDia = document.getElementById('diameter');
-      const iSphD = document.getElementById('sphereDiameter');
+      <!-- Habitat -->
+      <div class="form-group">
+        <label for="habitat">Hábitat</label>
+        <select id="habitat" name="habitat" required>
+          <option value="">Selecciona una opción</option>
+          <option value="luna">Base lunar</option>
+          <option value="marte">Colonia marciana</option>
+        </select>
+      </div>
 
-      const priorityList = document.getElementById('priorityList');
-      const fixedChecks = document.querySelectorAll('.fixed-check');
-      const notas = document.getElementById('notas');
-      const resetBtn = document.getElementById('resetBtn');
+      <!-- Tripulantes -->
+      <div class="form-group">
+        <label for="tripulantes">Capacidad de tripulación</label>
+        <input
+          type="number"
+          id="tripulantes"
+          name="tripulantes"
+          placeholder="Número de personas"
+          min="1"
+          required
+        />
+      </div>
 
-      const mVol = document.getElementById('mVol');
-      const mArea = document.getElementById('mArea');
-      const mSV = document.getElementById('mSV');
-      const mFixed = document.getElementById('mFixed');
-      const mNHV = document.getElementById('mNHV');
-      const mNHVpp = document.getElementById('mNHVpp');
+      <!-- Geometría -->
+      <div class="form-group">
+        <label for="tipo_geometria">Tipo de geometría</label>
+        <select id="tipo_geometria" name="tipo_geometria" required>
+          <option value="">Selecciona una opción</option>
+          <option value="cilindro">Cilindro</option>
+          <option value="domo">Domo</option>
+        </select>
+      </div>
 
-      const PI = Math.PI;
-      const A = (x) => (isFinite(x) && x !== '' && x !== null) ? Number(x) : 0;
-      const r2 = (r) => r * r;
-      function volCylinder(L, D) { const r = D/2; return PI * r2(r) * L; }
-      function areaCylinder(L, D) { const r = D/2; return (2*PI*r*L) + (2*PI*r2(r)); }
-      function volSphere(D) { const r = D/2; return (4/3) * PI * r2(r) * r; }
-      function areaSphere(D) { const r = D/2; return 4 * PI * r2(r); }
+      <!-- Campos para cilindro -->
+      <div id="cylinderFields" style="display: none">
+        <div class="form-group">
+          <label for="longitud">Longitud del cilindro (m)</label>
+          <input type="number" id="longitud" name="longitud" min="0" step="0.1" />
+        </div>
+        <div class="form-group">
+          <label for="diametro_cilindro">Diámetro del cilindro (m)</label>
+          <input type="number" id="diametro_cilindro" name="diametro_cilindro" min="0" step="0.1" />
+        </div>
+      </div>
 
-      function getFixedVolume() {
-        let sum = 0;
-        fixedChecks.forEach(chk => { if (chk.checked) sum += A(chk.dataset.vol); });
-        return sum;
-      }
+      <!-- Campos para domo -->
+      <div id="domeFields" style="display: none">
+        <div class="form-group">
+          <label for="diametro_domo">Diámetro del domo (m)</label>
+          <input type="number" id="diametro_domo" name="diametro_domo" min="0" step="0.1" />
+        </div>
+      </div>
 
-      function calcMetrics() {
-        const shape = shapeSel.value;
-        const crew = Math.max(1, A(capacidad.value));
-        let V = 0, S = 0;
+      <!-- Prioridades Drag & Drop -->
+      <div class="form-group">
+        <label>Prioriza tus áreas funcionales (arrastra para ordenar)</label>
+        <ul id="prioridad" class="priority-list">
+          <li draggable="true" data-id="sleep">Sueño <span class="pill">crew/escala</span></li>
+          <li draggable="true" data-id="hygiene">Higiene <span class="pill">crew/escala</span></li>
+          <li draggable="true" data-id="galley">Cocina/Alimentos <span class="pill">crew/escala</span></li>
+          <li draggable="true" data-id="recreation">Recreación <span class="pill">opcional</span></li>
+          <li draggable="true" data-id="exercise">Ejercicio <span class="pill">por-peldaños</span></li>
+          <li draggable="true" data-id="maintenance">Mantenimiento/Repair <span class="pill">volumen fijo</span></li>
+        </ul>
+      </div>
 
-        if (shape === 'cylinder') {
-          const L = A(iLen.value), D = A(iDia.value);
-          if (L > 0 && D > 0) { V = volCylinder(L, D); S = areaCylinder(L, D); }
-        } else if (shape === 'sphere') {
-          const D = A(iSphD.value);
-          if (D > 0) { V = volSphere(D); S = areaSphere(D); }
-        }
+      <!-- Checkboxes -->
+      <div class="form-group">
+        <label>Opciones adicionales</label>
+        <div>
+          <input type="checkbox" id="mantenimiento" name="mantenimiento" />
+          <label for="mantenimiento">Mantenimiento automatizado</label>
+        </div>
+        <div>
+          <input type="checkbox" id="soporte_vital" name="soporte_vital" />
+          <label for="soporte_vital">Soporte vital activo</label>
+        </div>
+      </div>
 
-        const SV = (V > 0) ? (S / V) : 0;
-        const Vfixed = getFixedVolume();
-        const equipMargin = 0.15 * V; // margen sencillo por equipamiento
-        const NHV = Math.max(0, V - Vfixed - equipMargin);
-        const NHVpp = (crew > 0) ? (NHV / crew) : 0;
+      <!-- Notas -->
+      <div class="form-group">
+        <label for="notas">Notas adicionales</label>
+        <textarea
+          id="notas"
+          name="notas"
+          rows="3"
+          placeholder="Detalles o aclaraciones sobre tu proyecto..."
+        ></textarea>
+      </div>
 
-        mVol.textContent   = V ? V.toFixed(2) : '—';
-        mArea.textContent  = S ? S.toFixed(2) : '—';
-        mSV.textContent    = (V && S) ? SV.toFixed(3) : '—';
-        mFixed.textContent = Vfixed ? Vfixed.toFixed(2) : '0.00';
-        mNHV.textContent   = NHV ? NHV.toFixed(2) : '—';
-        mNHVpp.textContent = NHVpp ? NHVpp.toFixed(2) : '—';
+      <!-- Acciones -->
+      <div class="form-actions">
+        <a href="index.html" class="btn btn-secondary">Volver</a>
+        <button type="submit" class="btn btn-primary">Crear mi hábitat</button>
+      </div>
+    </form>
+  </div>
 
-        return { V, S, SV, Vfixed, NHV, NHVpp };
-      }
-
-      function syncDimsVisibility() {
-        const v = shapeSel.value;
-        dimsCyl.style.display = (v === 'cylinder') ? '' : 'none';
-        dimsSph.style.display = (v === 'sphere') ? '' : 'none';
-        calcMetrics();
-      }
-
-      // Drag & Drop prioridades
-      let dragEl = null;
-      priorityList.addEventListener('dragstart', (e) => {
-        dragEl = e.target.closest('li');
-        if (dragEl) { dragEl.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
-      });
-      priorityList.addEventListener('dragend', () => {
-        if (dragEl) dragEl.classList.remove('dragging');
-        dragEl = null;
-      });
-      priorityList.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        const afterEl = getDragAfterElement(priorityList, e.clientY);
-        const dragging = priorityList.querySelector('.dragging');
-        if (!dragging) return;
-        if (afterEl == null) priorityList.appendChild(dragging);
-        else priorityList.insertBefore(dragging, afterEl);
-      });
-      function getDragAfterElement(container, y) {
-        const els = [...container.querySelectorAll('li:not(.dragging)')];
-        return els.reduce((closest, child) => {
-          const box = child.getBoundingClientRect();
-          const offset = y - (box.top + box.height / 2);
-          if (offset < 0 && offset > closest.offset) return { offset, element: child };
-          else return closest;
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-      }
-
-      // Eventos
-      ['input','change'].forEach(evt => {
-        shapeSel.addEventListener(evt, syncDimsVisibility);
-        capacidad.addEventListener(evt, calcMetrics);
-        if (iLen) iLen.addEventListener(evt, calcMetrics);
-        if (iDia) iDia.addEventListener(evt, calcMetrics);
-        if (iSphD) iSphD.addEventListener(evt, calcMetrics);
-        fixedChecks.forEach(chk => chk.addEventListener(evt, calcMetrics));
-      });
-
-      // Submit
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        if (!shapeSel.value) { alert('Selecciona una geometría'); return; }
-
-        const dims = (shapeSel.value === 'cylinder')
-          ? { length: A(iLen.value), diameter: A(iDia.value) }
-          : (shapeSel.value === 'sphere')
-            ? { diameter: A(iSphD.value) }
-            : {};
-
-        const fixedModules = [...fixedChecks]
-          .filter(chk => chk.checked)
-          .map(chk => ({ id: chk.dataset.id, volume_m3: A(chk.dataset.vol) }));
-
-        const priorities = [...priorityList.querySelectorAll('li')].map(li => li.dataset.id);
-        const metrics = calcMetrics();
-
-        const payload = {
-          project: { nombre: nombre.value.trim(), tipo: tipo.value },
-          mission: { crew: Math.max(1, A(capacidad.value)), duration_days: null, destination: tipo.value },
-          geometry: { shape: shapeSel.value, dims },
-          priorities,
-          fixedModules,
-          notes: (notas.value || '').trim(),
-          metrics
-        };
-
-        localStorage.setItem('habitatProject', JSON.stringify(payload));
-        alert('¡Diseño guardado! Ya puedes pasar al diseñador/prototipo de layout.');
-      });
-
-      resetBtn.addEventListener('click', () => {
-        form.reset();
-        syncDimsVisibility();
-        calcMetrics();
-        localStorage.removeItem('habitatProject');
-      });
-
-      // Estado inicial
-      syncDimsVisibility();
-      calcMetrics();
-    })();
-  </script>
+  <!-- Scripts -->
+  <script src="scripts/uiFormScrip.js"></script>
+  <script src="scripts/formScript.js"></script>
 </body>
 </html>
