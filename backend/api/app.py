@@ -1,14 +1,14 @@
 
 
-# from matplotlib import pyplot as plt
-# from matplotlib.patches import Polygon
-# from logica.objetos.hexagono import piso
+from matplotlib import pyplot as plt
+from matplotlib.patches import Polygon
+from logica.objetos.hexagono import piso
 
 
-# radio = 1
-# hexagonos = piso(radio)
+radio = 1
+hexagonos = piso(radio)
 
-# print(hexagonos)
+print(hexagonos)
 
 # fig, ax = plt.subplots()
 # ax.set_xlim(-3, 3)
