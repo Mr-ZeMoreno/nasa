@@ -1,60 +1,58 @@
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector(".space-form");
+  if (!form) return;
 
   form.addEventListener("submit", async (event) => {
-    event.preventDefault(); // evita recargar la página
+    event.preventDefault();
 
-    // Obtener datos del formulario
+    // Datos básicos
     const nombre = form.nombre.value.trim();
     const habitat = form.habitat.value;
-    const tripulantes = parseInt(form.tripulantes.value, 10);
+    const tripulantes = Number(form.tripulantes.value);
     const tipo_geometria = form.tipo_geometria.value;
 
-    // Geometría dinámica
+    // Geometría
     let geometria = {};
     if (tipo_geometria === "cilindro") {
       geometria = {
         cilindro: {
-          longitud: parseFloat(form.longitud.value) || 0,
-          diametro: parseFloat(form.diametro_cilindro.value) || 0,
+          longitud: Number(form.longitud.value || 0),
+          diametro: Number(form.diametro_cilindro.value || 0),
         },
       };
     } else if (tipo_geometria === "domo") {
       geometria = {
         domo: {
-          diametro: parseFloat(form.diametro_domo.value) || 0,
+          diametro: Number(form.diametro_domo.value || 0),
         },
       };
     }
 
-    // Prioridades (puede ser un textarea o lista UL)
-    let prioridades = [];
-    if (form.prioridad && form.prioridad.tagName === "TEXTAREA") {
-      prioridades = form.prioridad.value
-        .split(",")
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0);
-    } else if (form.prioridad && form.prioridad.tagName === "UL") {
-      prioridades = Array.from(form.prioridad.querySelectorAll("li")).map(
-        (li) => li.textContent.trim()
-      );
-    }
+    // Prioridades: usa data-id en el orden actual
+    const prioridades = [];
+    document.getElementById("prioridad")
+  .querySelectorAll("li")
+  .forEach(li => prioridades.push(li.getAttribute("data-id")));
 
-    // Booleans
+
+    // Opciones
     const mantenimiento = form.mantenimiento.checked;
     const soporte_vital = form.soporte_vital.checked;
 
     // Notas
     const notas = form.notas.value.trim();
 
-    // Construir JSON final
+    
+
+    // JSON para la API
     const formData = {
       nombre,
       habitat,
       tripulantes,
       tipo_geometria,
       geometria,
-      prioridad: prioridades,
+      prioridad: prioridades,   // ej. ["galley","exercise","hygiene",...]
       mantenimiento,
       soporte_vital,
       notas,
@@ -65,15 +63,17 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await fetch("http://localhost:5000/api/habitat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text || response.statusText}`);
+      }
+
       const data = await response.json();
       console.log("Respuesta del servidor:", data);
-
       alert("✅ Datos enviados correctamente al servidor");
     } catch (error) {
       console.error("❌ Error al enviar los datos:", error);
