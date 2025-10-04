@@ -177,3 +177,20 @@ if __name__ == "__main__":
     print("Layouts completos válidos:", stats.leaves_feasible)
     print("Layouts completos inválidos (cierre anillo):", stats.leaves_infeasible)
     print("Expansiones por profundidad (slot):", dict(sorted(stats.depth_expansions.items())))
+
+def explicar_layout(rooms, A, perm):
+    print("\n# Layout ideal (circular):")
+    print(" -> ".join(rooms[i] for i in perm) + " -> " + rooms[perm[0]])
+    print("\n# Desglose de aristas:")
+    total = 0
+    n = len(perm)
+    for i in range(n):
+        j = (i+1) % n
+        a, b = rooms[perm[i]], rooms[perm[j]]
+        w = A[perm[i]][perm[j]]
+        total += w
+        print(f"  {a} — {b} = {w}")
+    print(f"\nPuntaje total = {total}")
+
+# Usar así, después de resolver:
+explicar_layout(rooms, A, best_perm)
