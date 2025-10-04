@@ -2,8 +2,9 @@ from random import randint
 from typing import Self
 
 from matplotlib.pylab import cos, radians, sin
-from libreria.algebra_matrices import producto_punto
-from objetos.punto import Punto
+
+from logica.libreria.algebra_matrices import producto_punto
+from logica.objetos.punto import Punto
 
 
 class Objeto:
@@ -14,7 +15,7 @@ class Objeto:
         self.ancho = None
         self.alto = None
 
-        self.vertices: list[Punto] = [Punto([[0], [0], [0]])]
+        self.vertices: list[Punto] = []
 
     def actualizar_dimensiones(self) -> Self:
         if len(self.vertices) < 2:
@@ -33,7 +34,7 @@ class Objeto:
 
     def transformar(self, matriz: list[list[int | float]]):
         nuevos_vertices = []
-        for v in self.get_vertices_matrix():
+        for v in self.matriz():
             v_rotado = producto_punto(matriz, v)
             nuevos_vertices.append(Punto(v_rotado))
 
@@ -90,8 +91,11 @@ class Objeto:
 
         return self.actualizar_dimensiones()
 
-    def get_vertices_matrix(self) -> list[list[list[int | float]]]:
+    def matriz(self) -> list[list[list[int | float]]]:
         return [[[v.x], [v.y], [v.z]] for v in self.vertices]
 
     def __str__(self) -> str:
         return "[" + ", ".join(f"({v.x}, {v.y}, {v.z})" for v in self.vertices) + "]"
+
+    def __repr__(self) -> str:
+        return self.__str__()
