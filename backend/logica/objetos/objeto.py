@@ -2,8 +2,8 @@ from random import randint
 from typing import Self
 
 from matplotlib.pylab import cos, radians, sin
-from algebra_matrices import producto_punto
-from punto import Punto
+from libreria.algebra_matrices import producto_punto
+from objetos.punto import Punto
 
 
 class Objeto:

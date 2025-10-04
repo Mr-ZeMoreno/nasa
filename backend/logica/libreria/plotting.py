@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+
 import matplotlib as mpl
 mpl.rcParams['keymap.quit'] = []
 mpl.rcParams['keymap.save'] = []

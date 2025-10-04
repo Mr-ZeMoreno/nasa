@@ -1,9 +1,5 @@
 from __future__ import annotations
 from random import randint
-from objeto import Objeto
-from punto import Punto
-from tipos import coordenada
-from plotting import dibujar_interactivo
 
 class Adyacencia:
     def __init__(self, m: list[list[Nodo | None]]) -> None:
@@ -63,19 +59,3 @@ class Nodo:
     def __str__(self) -> str:
         return f"<Nodo ID: {self.id}>"
 
-
-piso = Objeto() \
-    .add_vertice(Punto([[1], [1], [0]])) \
-    .add_vertice(Punto([[0], [0], [0]])) \
-    .add_vertice(Punto([[0], [1], [0]])) \
-    .add_vertice(Punto([[1], [0], [0]])) \
-    .add_vertice(Punto([[1], [1], [1]])) \
-    .add_vertice(Punto([[0], [0], [1]])) \
-    .add_vertice(Punto([[0], [1], [1]])) \
-    .add_vertice(Punto([[1], [0], [1]]))
-
-
-nodo_piso = Nodo()
-print(piso)
-print(piso.largo, piso.ancho, piso.alto)
-dibujar_interactivo(piso)

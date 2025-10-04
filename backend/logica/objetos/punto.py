@@ -1,4 +1,4 @@
-from tipos import coordenada
+from libreria.tipos import coordenada
 
 class Punto:
     def __init__(self, m: list[list[int | float]]) -> None:
