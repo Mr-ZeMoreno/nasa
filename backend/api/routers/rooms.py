@@ -3,11 +3,12 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from api.logica.objetos.hexagono import piso
+from logica.objetos.hexagono import piso
+
 PREFIX = "/rooms"
 
 router = APIRouter(prefix=f"{PREFIX}",
-                   tags=["Usuarios"])
+                   tags=["Rooms"])
 
 
 class Habitats(Enum):
@@ -49,7 +50,7 @@ class Formulario(BaseModel):
 @router.post("/")
 def obtener_piso(payload: Formulario):
     # hacer algo y entregar matriz
-    matriz = piso(1)
+    matriz = piso(1, 0.25)
 
     return matriz
 
