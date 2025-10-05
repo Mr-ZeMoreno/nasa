@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import * as THREE from "three"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { useHabitat } from "@/store/use-habitat"
 import { axialToPixel, hexVertices, hexToKey } from "@/lib/hex"
 import type { HexCoord, Zone, HabitatObject } from "@/lib/types"

@@ -2,8 +2,8 @@ Thought for 4s### HabitatX - Plataforma de Diseño de Hábitats Espaciales
 
 Si no ejecuta xq tira error habitat canvas
 
-npm i three
-npm i -D @types/three
+npm i three@^0.180 @types/three@^0.180 -D
+
 
 
 ## ¿Qué es esto?
