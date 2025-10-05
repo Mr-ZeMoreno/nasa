@@ -2,7 +2,7 @@
 # Backtracking con poda (DFS)
 # ----------------------------
 from typing import List, Optional
-from algoritmo.genetico import Stats
+from logica.algoritmo.genetico import Stats
 
 
 def backtrack(stats: Stats,
@@ -55,7 +55,8 @@ def backtrack(stats: Stats,
         stats.children_valid += 1
         # Colocar r y continuar
         slots[pos] = r
-        new_remaining = [x for x in remaining if x != r]  # sin mutar la lista original
+        # sin mutar la lista original
+        new_remaining = [x for x in remaining if x != r]
         backtrack(stats, slots, pos+1, new_remaining,
                   current_score + A[prev][r],
                   A, n, zeros_count, best)
@@ -64,7 +65,7 @@ def backtrack(stats: Stats,
 
 def solve_backtracking(rooms: List[str],
                        A: List[List[int]],
-                       anchor_room: Optional[str]=None):
+                       anchor_room: Optional[str] = None):
     """
     - Fija anchor_room en slot 0 para romper simetría.
     - Coloca el resto sala a sala (slots 1..N-1), podando si A=0 con el vecino ya colocado.
@@ -73,7 +74,7 @@ def solve_backtracking(rooms: List[str],
           por cuántos 'ceros' tiene r (más restrictiva primero).
     """
     n = len(rooms)
-    idx = {r:i for i,r in enumerate(rooms)}
+    idx = {r: i for i, r in enumerate(rooms)}
     if anchor_room is None:
         anchor_room = rooms[0]
     anchor = idx[anchor_room]
