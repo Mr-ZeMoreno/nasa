@@ -28,17 +28,26 @@ def hexagono(centro: Punto, radio: float):
     return o
 
 
-def piso(radio: float, espesor: float):
-    # hexágono central
-    centros = [Punto([[0], [0], [0]])]
-    central = hexagono(Punto([[0], [0], [espesor]]), radio)
+class Piso:
+    def __init__(self, radio: float, espesor: float):
+        self.radio = float(radio)
+        self.centros = []
 
-    # calcular centros vecinos usando puntos medios
-    for i in range(6):
-        v1 = central.vertices[i]
-        v2 = central.vertices[(i + 1) % 6]
-        mx, my = punto_medio(v1, v2)
-        centros.append(Punto([[2 * mx], [2 * my], [0]]))
+        # Centro y hex central
+        self.centros.append(Punto([[0.0], [0.0], [0.0]]).vector_plano())
+        self.central = hexagono(Punto([[0.0], [0.0], [float(espesor)]]), self.radio)
 
-    # generar hexágonos a partir de esos centros
-    return [hexagono(c, radio).matriz() for c in centros]
+        # Asegurar que usamos solo 6 vértices únicos
+        verts = self.central.vertices
+        if len(verts) == 12 and verts[0] == verts[6]:
+            verts = verts[:6]  # descarta la repetición
+
+        # calcular 6 centros vecinos usando puntos medios de cada arista
+        for i in range(6):
+            v1 = verts[i]
+            v2 = verts[(i + 1) % 6]
+            mx, my = punto_medio(v1, v2)   # devuelve escalares
+            self.centros.append(Punto([[2.0 * mx], [2.0 * my], [0.0]]).vector_plano())
+
+    def hexagonos(self):
+        return [hexagono(c, self.radio).matriz_plana() for c in self.centros]

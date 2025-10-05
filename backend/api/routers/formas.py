@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
-from logica.objetos.hexagono import hexagono, piso as p
+from logica.objetos.hexagono import hexagono, Piso as P
 from logica.objetos.punto import Punto
 
 router = APIRouter(prefix="/formas")
@@ -13,12 +13,14 @@ class HexPayload(BaseModel):
 @router.post("/hex")
 def hex(payload: HexPayload):
     centro = Punto(payload.centro)
-    return hexagono(centro, payload.radio).matriz()
+    return hexagono(centro, payload.radio).matriz_plana()
 
 
 @router.get("/piso")
-def piso(radio:float, espesor: float):
-    return p(radio, espesor)
+def piso_get(radio: float, espesor: float):
+    floor_matrix = P(radio, espesor).centros
+
+    return floor_matrix
 
 # ------------------ WS ------------------
 class RotateCommand(BaseModel):
@@ -32,7 +34,7 @@ class RotateCommand(BaseModel):
 async def piso_ws(websocket: WebSocket):
     await websocket.accept()
 
-    floor_matrix = p(radio=1.0, espesor=0.1)
+    floor_matrix = P(radio=1.0, espesor=0.1).centros
 
     try:
         while True:

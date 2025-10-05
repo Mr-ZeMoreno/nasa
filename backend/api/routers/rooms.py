@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from logica.objetos.hexagono import piso
+from logica.objetos.hexagono import Piso
 
 PREFIX = "/rooms"
 
@@ -50,7 +50,7 @@ class Formulario(BaseModel):
 @router.post("/")
 def obtener_piso(payload: Formulario):
     # hacer algo y entregar matriz
-    matriz = piso(1, 0.25)
+    matriz = Piso(1, 0.25).hexagonos()
 
     return matriz
 

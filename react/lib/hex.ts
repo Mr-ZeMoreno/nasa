@@ -293,39 +293,21 @@ export function areSectorsAdjacent(a: SectorCoord, b: SectorCoord): boolean {
 
 
 // /* ----------------------- Helpers ----------------------- */
-export async function createHexMesh(pos: { x: number; y: number; z: number }) {
-  const HEX_SIZE = 0.9;
-  const pixel = axialToPixel({ q: pos.x, r: pos.y }, 1);
+export async function createHexMesh(x: number, y: number) {
+  if (x == null || y == null) return null;
 
   const shape = new THREE.Shape();
-  const vertices = await hexVertices({ x: 0, y: 0 }, HEX_SIZE); // await aquí
-  shape.moveTo(vertices[0].x, vertices[0].y);
-  for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y);
+  // ejemplo: hexágono unitario
+  const radius = 1;
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const vx = x + radius * Math.cos(angle);
+    const vy = y + radius * Math.sin(angle);
+    if (i === 0) shape.moveTo(vx, vy);
+    else shape.lineTo(vx, vy);
+  }
   shape.closePath();
 
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
-  const material = new THREE.MeshPhongMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.4 });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(pixel.x, pixel.y, pos.z * 0.15);
-  mesh.userData = { type: "hex" };
-  return mesh;
-}
-
-
-export async function createObjectMesh(obj: HabitatObject, pos: { x: number; y: number; z: number }) {
-  const HEX_SIZE = 0.8;
-  const pixel = axialToPixel({ q: pos.x, r: pos.y }, 1);
-
-  const shape = new THREE.Shape();
-  const vertices = await hexVertices({ x: 0, y: 0 }, HEX_SIZE); // await
-  shape.moveTo(vertices[0].x, vertices[0].y);
-  for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y);
-  shape.closePath();
-
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05 });
-  const material = new THREE.MeshPhongMaterial({ color: 0xffcc00, emissive: 0xffcc00, emissiveIntensity: 0.3 });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(pixel.x, pixel.y, pos.z * 0.15 + 0.15);
-  mesh.userData = { type: "object" };
-  return mesh;
+  const geometry = new THREE.ShapeGeometry(shape);
+  return geometry;
 }

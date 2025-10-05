@@ -34,7 +34,7 @@ class Objeto:
 
     def transformar(self, matriz: list[list[int | float]]):
         nuevos_vertices = []
-        for v in self.matriz():
+        for v in self.matriz_anidada():
             v_rotado = producto_punto(matriz, v)
             nuevos_vertices.append(Punto(v_rotado))
 
@@ -91,9 +91,12 @@ class Objeto:
 
         return self.actualizar_dimensiones()
 
-    def matriz(self) -> list[list[list[int | float]]]:
-        return [[[v.x], [v.y], [v.z]] for v in self.vertices]
+    def matriz_plana(self) -> list[list[int | float]]:
+        return [v.vector_plano() for v in self.vertices]
 
+    def matriz_anidada(self) -> list[list[list[int | float]]]:
+        return [v.vector_anidado() for v in self.vertices]
+    
     def __str__(self) -> str:
         return "[" + ", ".join(f"({v.x}, {v.y}, {v.z})" for v in self.vertices) + "]"
 
