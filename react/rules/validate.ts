@@ -1,5 +1,5 @@
-import type { Zone, HabitatObject, Placement, ValidationResult, RuleResult } from "@/lib/types"
-import { hexDistance, hexToKey } from "@/lib/hex"
+import type { Zone, HabitatObject, Placement, ValidationResult, RuleResult, SectorCoord } from "@/lib/types"
+import { hexDistance, sectorToKey } from "@/lib/hex"
 
 /**
  * Validate a placement against all rules
@@ -7,7 +7,7 @@ import { hexDistance, hexToKey } from "@/lib/hex"
 export function validatePlacement(
   object: HabitatObject,
   zone: Zone,
-  cells: typeof object extends { slots: number } ? any[] : never,
+  sectors: SectorCoord[],
   allZones: Zone[],
   allPlacements: Placement[],
   allObjects: HabitatObject[],
@@ -17,10 +17,10 @@ export function validatePlacement(
   // Run all validation rules
   results.push(validateCapacity(object, zone))
   results.push(validateTags(object, zone))
-  results.push(...validateNoiseSeparation(object, cells, allZones, allPlacements, allObjects))
-  results.push(...validateFunctionalAdjacency(object, zone, cells, allZones, allPlacements, allObjects))
+  results.push(...validateNoiseSeparation(object, sectors, allZones, allPlacements, allObjects))
+  results.push(...validateFunctionalAdjacency(object, zone, sectors, allZones, allPlacements, allObjects))
   results.push(validateProhibitedZone(object, zone))
-  results.push(validateAccessibility(cells, allZones, allPlacements))
+  results.push(validateAccessibility(sectors, allZones, allPlacements))
 
   const ok = results.every((r) => r.ok || r.severity === "soft")
 
@@ -69,14 +69,13 @@ function validateTags(object: HabitatObject, zone: Zone): RuleResult {
  */
 function validateNoiseSeparation(
   object: HabitatObject,
-  cells: any[],
+  sectors: SectorCoord[],
   allZones: Zone[],
   allPlacements: Placement[],
   allObjects: HabitatObject[],
 ): RuleResult[] {
   const results: RuleResult[] = []
 
-  // If this is a noisy object, check distance to sleep zones
   if (object.tags.includes("noisy")) {
     const sleepZones = allZones.filter((z) => z.allowedTags.includes("sleep"))
 
@@ -84,9 +83,9 @@ function validateNoiseSeparation(
       const sleepPlacements = allPlacements.filter((p) => p.zoneId === sleepZone.id)
 
       sleepPlacements.forEach((sleepPlacement) => {
-        sleepPlacement.cells.forEach((sleepCell) => {
-          cells.forEach((cell) => {
-            const distance = hexDistance(cell, sleepCell)
+        sleepPlacement.sectors.forEach((sleepSector) => {
+          sectors.forEach((sector) => {
+            const distance = hexDistance(sector.hex, sleepSector.hex)
             const ok = distance >= 2
 
             if (!ok) {
@@ -104,7 +103,6 @@ function validateNoiseSeparation(
     })
   }
 
-  // If this is a sleep object, check distance to noisy zones
   if (object.tags.includes("sleep")) {
     const noisyPlacements = allPlacements.filter((p) => {
       const obj = allObjects.find((o) => o.id === p.objectId)
@@ -112,9 +110,9 @@ function validateNoiseSeparation(
     })
 
     noisyPlacements.forEach((noisyPlacement) => {
-      noisyPlacement.cells.forEach((noisyCell) => {
-        cells.forEach((cell) => {
-          const distance = hexDistance(cell, noisyCell)
+      noisyPlacement.sectors.forEach((noisySector) => {
+        sectors.forEach((sector) => {
+          const distance = hexDistance(sector.hex, noisySector.hex)
           const ok = distance >= 2
 
           if (!ok) {
@@ -141,14 +139,13 @@ function validateNoiseSeparation(
 function validateFunctionalAdjacency(
   object: HabitatObject,
   zone: Zone,
-  cells: any[],
+  sectors: SectorCoord[],
   allZones: Zone[],
   allPlacements: Placement[],
   allObjects: HabitatObject[],
 ): RuleResult[] {
   const results: RuleResult[] = []
 
-  // If this is galley, check proximity to stowage
   if (object.tags.includes("food")) {
     const storagePlacements = allPlacements.filter((p) => {
       const obj = allObjects.find((o) => o.id === p.objectId)
@@ -159,9 +156,9 @@ function validateFunctionalAdjacency(
       let minDistance = Number.POSITIVE_INFINITY
 
       storagePlacements.forEach((storagePlacement) => {
-        storagePlacement.cells.forEach((storageCell) => {
-          cells.forEach((cell) => {
-            const distance = hexDistance(cell, storageCell)
+        storagePlacement.sectors.forEach((storageSector) => {
+          sectors.forEach((sector) => {
+            const distance = hexDistance(sector.hex, storageSector.hex)
             minDistance = Math.min(minDistance, distance)
           })
         })
@@ -206,30 +203,25 @@ function validateProhibitedZone(object: HabitatObject, zone: Zone): RuleResult {
  * Rule: Accessibility (soft)
  * Objects should not be completely surrounded (need at least one free neighbor)
  */
-function validateAccessibility(cells: any[], allZones: Zone[], allPlacements: Placement[]): RuleResult {
-  // Build occupancy map
-  const occupiedCells = new Set<string>()
+function validateAccessibility(sectors: SectorCoord[], allZones: Zone[], allPlacements: Placement[]): RuleResult {
+  const occupiedSectors = new Set<string>()
   allPlacements.forEach((p) => {
-    p.cells.forEach((cell) => {
-      occupiedCells.add(hexToKey(cell))
+    p.sectors.forEach((sector) => {
+      occupiedSectors.add(sectorToKey(sector))
     })
   })
 
-  // Check if at least one cell has a free neighbor
   let hasFreeNeighbor = false
 
-  for (const cell of cells) {
-    const neighbors = [
-      { q: cell.q + 1, r: cell.r },
-      { q: cell.q + 1, r: cell.r - 1 },
-      { q: cell.q, r: cell.r - 1 },
-      { q: cell.q - 1, r: cell.r },
-      { q: cell.q - 1, r: cell.r + 1 },
-      { q: cell.q, r: cell.r + 1 },
+  for (const sector of sectors) {
+    // Check adjacent sectors in same hex
+    const adjacentInSameHex = [
+      { hex: sector.hex, sector: (sector.sector + 5) % 6 },
+      { hex: sector.hex, sector: (sector.sector + 1) % 6 },
     ]
 
-    for (const neighbor of neighbors) {
-      if (!occupiedCells.has(hexToKey(neighbor))) {
+    for (const neighbor of adjacentInSameHex) {
+      if (!occupiedSectors.has(sectorToKey(neighbor))) {
         hasFreeNeighbor = true
         break
       }
@@ -243,7 +235,7 @@ function validateAccessibility(cells: any[], allZones: Zone[], allPlacements: Pl
     ok: hasFreeNeighbor,
     severity: "soft",
     message: hasFreeNeighbor ? "Accessible" : "Object is completely surrounded",
-    hint: hasFreeNeighbor ? undefined : "Ensure at least one adjacent cell is free for access",
+    hint: hasFreeNeighbor ? undefined : "Ensure at least one adjacent sector is free for access",
   }
 }
 
@@ -258,7 +250,7 @@ export function validateLayout(zones: Zone[], placements: Placement[], objects: 
     const zone = zones.find((z) => z.id === placement.zoneId)
 
     if (object && zone) {
-      const result = validatePlacement(object, zone, placement.cells, zones, placements, objects)
+      const result = validatePlacement(object, zone, placement.sectors, zones, placements, objects)
       allResults.push(...result.results)
     }
   })

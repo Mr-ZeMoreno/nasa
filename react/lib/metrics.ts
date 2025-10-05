@@ -54,8 +54,10 @@ export function calculateMetrics(
   // Calculate total cells
   const totalCells = zones.reduce((sum, zone) => sum + zone.cells.length, 0)
 
-  // Calculate used cells
-  const usedCells = placements.reduce((sum, placement) => sum + placement.cells.length, 0)
+  // Each hexagon has 6 sectors, so we count unique hexagons from sectors
+  const usedSectors = placements.reduce((sum, placement) => sum + placement.sectors.length, 0)
+  const uniqueHexagons = new Set(placements.flatMap((p) => p.sectors.map((s) => `${s.hex.q},${s.hex.r}`)))
+  const usedCells = uniqueHexagons.size
 
   const freeCells = totalCells - usedCells
   const utilizationPercent = totalCells > 0 ? (usedCells / totalCells) * 100 : 0
@@ -63,7 +65,8 @@ export function calculateMetrics(
   // Zone breakdown
   const zoneStats = zones.map((zone) => {
     const zonePlacements = placements.filter((p) => p.zoneId === zone.id)
-    const used = zonePlacements.reduce((sum, p) => sum + p.cells.length, 0)
+    const zoneHexagons = new Set(zonePlacements.flatMap((p) => p.sectors.map((s) => `${s.hex.q},${s.hex.r}`)))
+    const used = zoneHexagons.size
     const capacity = zone.cells.length
     const free = capacity - used
     const utilizationPercent = capacity > 0 ? (used / capacity) * 100 : 0
