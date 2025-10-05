@@ -1,4 +1,4 @@
-import type { HexCoord, PixelCoord, SectorCoord } from "./types"
+import type { HabitatObject, HexCoord, PixelCoord, SectorCoord } from "./types"
 
 import * as THREE from "three";
 
@@ -138,7 +138,7 @@ export function hexNeighbors(hex: HexCoord): HexCoord[] {
 /**
  * Get vertices of a hexagon for rendering (flat-top orientation)
  */
-const API = "http://localhost:8000/formas/"
+const API = "http://localhost:8000/formas"
 
 export const hexVertices = async (center: PixelCoord, size: number): Promise<PixelCoord[]> => {
   try {
@@ -246,17 +246,18 @@ export function keyToSector(key: string): SectorCoord {
  * Get the 6 triangular sector vertices for a hexagon
  * Each sector is defined by [center, vertex_i, vertex_(i+1)]
  */
-export function getSectorVertices(
+export async function getSectorVertices(
   center: PixelCoord,
   hexCenter: PixelCoord,
   size: number,
   sectorIndex: number,
-): PixelCoord[] {
-  const hexVerts = hexVertices(center, size)
+): Promise<PixelCoord[]> { // la función ahora devuelve Promise<PixelCoord[]>
+  const hexVerts = await hexVertices(center, size) // <-- await aquí
   const nextIndex = (sectorIndex + 1) % 6
 
   return [hexCenter, hexVerts[sectorIndex], hexVerts[nextIndex]]
 }
+
 
 /**
  * Get all 6 sectors for a hexagon
@@ -288,4 +289,43 @@ export function areSectorsAdjacent(a: SectorCoord, b: SectorCoord): boolean {
   // Check if sectors are on the shared edge
   // This is a simplified check - sectors on opposite sides of shared edge are adjacent
   return true
+}
+
+
+// /* ----------------------- Helpers ----------------------- */
+export async function createHexMesh(pos: { x: number; y: number; z: number }) {
+  const HEX_SIZE = 0.9;
+  const pixel = axialToPixel({ q: pos.x, r: pos.y }, 1);
+
+  const shape = new THREE.Shape();
+  const vertices = await hexVertices({ x: 0, y: 0 }, HEX_SIZE); // await aquí
+  shape.moveTo(vertices[0].x, vertices[0].y);
+  for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y);
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
+  const material = new THREE.MeshPhongMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.4 });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(pixel.x, pixel.y, pos.z * 0.15);
+  mesh.userData = { type: "hex" };
+  return mesh;
+}
+
+
+export async function createObjectMesh(obj: HabitatObject, pos: { x: number; y: number; z: number }) {
+  const HEX_SIZE = 0.8;
+  const pixel = axialToPixel({ q: pos.x, r: pos.y }, 1);
+
+  const shape = new THREE.Shape();
+  const vertices = await hexVertices({ x: 0, y: 0 }, HEX_SIZE); // await
+  shape.moveTo(vertices[0].x, vertices[0].y);
+  for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y);
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05 });
+  const material = new THREE.MeshPhongMaterial({ color: 0xffcc00, emissive: 0xffcc00, emissiveIntensity: 0.3 });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(pixel.x, pixel.y, pos.z * 0.15 + 0.15);
+  mesh.userData = { type: "object" };
+  return mesh;
 }

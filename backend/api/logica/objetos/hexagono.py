@@ -41,4 +41,4 @@ def piso(radio: float, espesor: float):
         centros.append(Punto([[2 * mx], [2 * my], [0]]))
 
     # generar hexágonos a partir de esos centros
-    return [hexagono(c, radio) for c in centros]
+    return [hexagono(c, radio).matriz() for c in centros]
