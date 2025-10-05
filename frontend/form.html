@@ -95,7 +95,24 @@
         </div>
         
     </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    // Selecciona los checkboxes dentro de .form-group (funciona con tu HTML original)
+    const checkboxes = document.querySelectorAll('.form-group input[type="checkbox"]');
 
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+        const checked = document.querySelectorAll('.form-group input[type="checkbox"]:checked');
+        if (checked.length > 2) {
+            // deshacer la última acción
+            e.target.checked = false;
+            alert('Solo puedes seleccionar un máximo de 2 opciones.');
+        }
+        });
+    });
+    });
+    </script>
 
       <!-- Notas -->
       <div class="form-group">
