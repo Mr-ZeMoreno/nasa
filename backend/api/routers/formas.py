@@ -1,7 +1,10 @@
+import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from genetic_test import gen_nodos
 from logica.objetos.hexagono import hexagono, Piso as P
 from logica.objetos.punto import Punto
+from logica.prueba import mejor_orden
 
 router = APIRouter(prefix="/formas")
 
@@ -18,9 +21,17 @@ def hex(payload: HexPayload):
 
 @router.get("/piso")
 def piso_get(radio: float, espesor: float):
-    floor_matrix = P(radio, espesor).centros
+    with open("restricciones.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    return floor_matrix
+    rooms = gen_nodos(data)
+    best_layout, _, _, _, _ = mejor_orden(rooms)
+    floor = P(1, 0.1, best_layout)
+    floor_matrix =  floor.centros_json()
+    floor_names = floor.nombres_json()
+    
+
+    return {"m": floor_matrix, "n": floor_names}
 
 # ------------------ WS ------------------
 class RotateCommand(BaseModel):
@@ -34,8 +45,15 @@ class RotateCommand(BaseModel):
 async def piso_ws(websocket: WebSocket):
     await websocket.accept()
 
-    floor_matrix = P(radio=1.0, espesor=0.1).centros
+    with open("restricciones.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
 
+    rooms = gen_nodos(data)
+    best_layout, _, _, _, _ = mejor_orden(rooms)
+    floor = P(1, 0.1, best_layout)
+    floor_matrix =  floor.centros_json()
+    floor_names = floor.nombres_json()
+    
     try:
         while True:
             data = await websocket.receive_json()
@@ -43,7 +61,7 @@ async def piso_ws(websocket: WebSocket):
 
             if command_type == "get_floor":
                 # Devolver la matriz completa al cliente
-                await websocket.send_json({"type": "floor", "matrix": floor_matrix})
+                await websocket.send_json({"type": "floor", "matrix": floor_matrix, "nombres": floor_names})
 
             elif command_type == "rotate_object":
                 x = data["x"]

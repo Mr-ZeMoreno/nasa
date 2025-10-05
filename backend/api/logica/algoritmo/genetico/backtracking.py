@@ -1,93 +1,129 @@
 # ----------------------------
-# Backtracking con poda (DFS)
+# TSP máximo exacto (Held-Karp DP)
 # ----------------------------
-from typing import List, Optional
-from logica.algoritmo.genetico import Stats
+from typing import List, Optional, Tuple
+from math import inf
+from logica.objetos.nodo import Nodo
 
+NEG_INF = -10**12  # para prohibidas
 
-def backtrack(stats: Stats,
-              slots: list[int],
-              pos: int,
-              remaining: list[int],
-              current_score: int,
-              A: list[list[int]],
-              n: int,
-              zeros_count: list[int],
-              best: dict):
-    # pos = índice de slot a llenar (1..N-1). Slot 0 ya está fijo (anchor).
-    stats.nodes_expanded += 1
-    print("ejecutando back")
-    stats.depth_expansions[pos] = stats.depth_expansions.get(pos, 0) + 1
+def _validate_matrix_square(A: List[List[int]]) -> int:
+    n = len(A)
+    if n == 0:
+        raise ValueError("La matriz de adyacencia A está vacía.")
+    for i, row in enumerate(A):
+        if len(row) != n:
+            raise ValueError(f"A no es cuadrada: fila {i} tiene len={len(row)} != {n}.")
+    return n
 
-    # ¿completamos todos los slots?
-    if pos == n:
-        last = slots[n-1]
-        first = slots[0]
-        # Validar cierre del anillo (último con primero)
-        if A[last][first] == 0:
-            stats.leaves_infeasible += 1
-            return
-        total = current_score + A[last][first]
-        stats.leaves_feasible += 1
-        if total > best["score"]:
-            best["score"] = total
-            best["perm"] = slots.copy()
-        return
-
-    prev = slots[pos-1]  # vecino izquierdo ya colocado
-    # hijos "lógicos": todas las salas restantes
-    stats.children_generated += len(remaining)
-
-    # hijos viables: los que no violan A=0 con el vecino izquierdo
-    candidates = [r for r in remaining if A[prev][r] != 0]
-    stats.children_pruned_zero += (len(remaining) - len(candidates))
-
-    # Orden de expansión (heurística):
-    # 1) mayor A[prev][r] (más score inmediato)
-    # 2) más 'ceros' (r es más restrictiva ⇒ la atendemos antes)
-    candidates.sort(key=lambda r: (-A[prev][r], -zeros_count[r]))
-
-    for r in candidates:
-        # Poda de cierre: si es el último slot, checa también con el anchor (slot 0)
-        if pos == n-1 and A[r][slots[0]] == 0:
-            continue
-
-        stats.children_valid += 1
-        # Colocar r y continuar
-        slots[pos] = r
-        # sin mutar la lista original
-        new_remaining = [x for x in remaining if x != r]
-        backtrack(stats, slots, pos+1, new_remaining,
-                  current_score + A[prev][r],
-                  A, n, zeros_count, best)
-        slots[pos] = -1
-
-
-def solve_backtracking(rooms: List[str],
-                       A: List[List[int]],
-                       anchor_room: Optional[str] = None):
+def solve_tsp_max_dp(
+    rooms: List[Nodo],
+    A: List[List[int]],
+    anchor_room: Optional[Nodo | int | str] = None,
+) -> Tuple[List[int], int]:
     """
-    - Fija anchor_room en slot 0 para romper simetría.
-    - Coloca el resto sala a sala (slots 1..N-1), podando si A=0 con el vecino ya colocado.
-    - Heurística:
-        * Ordena candidatos por A[prev][r] (ganancia inmediata) y, de tie-breaker,
-          por cuántos 'ceros' tiene r (más restrictiva primero).
+    Devuelve (best_perm_indices, best_score) para el ciclo máximo.
+    - rooms: lista de Nodo en el mismo orden de A
+    - A: pesos simétricos; A[i][j] == 0 (i != j) se trata como ARISTA PROHIBIDA
+    - anchor_room: Nodo, índice o id/str. Si None, usa rooms[0].
     """
-    n = len(rooms)
-    idx = {r: i for i, r in enumerate(rooms)}
+    n = _validate_matrix_square(A)
+    if len(rooms) != n:
+        raise ValueError("rooms y A desalineados.")
+
+    # resolver índice del ancla
     if anchor_room is None:
-        anchor_room = rooms[0]
-    anchor = idx[anchor_room]
+        anchor = 0
+    elif isinstance(anchor_room, int):
+        anchor = anchor_room
+    elif isinstance(anchor_room, Nodo):
+        try:
+            anchor = rooms.index(anchor_room)
+        except ValueError:
+            raise ValueError("anchor_room (Nodo) no está en rooms.")
+    else:
+        # str/id
+        ids = [r.id if hasattr(r, "id") else getattr(r, "nombre", None) for r in rooms]
+        if anchor_room not in ids:
+            raise ValueError(f"anchor_room '{anchor_room}' no está en rooms.")
+        anchor = ids.index(anchor_room)
 
-    slots = [-1]*n
-    slots[0] = anchor
-    remaining = [i for i in range(n) if i != anchor]
+    # preprocesar: convertir prohibidas a NEG_INF (excepto diagonal)
+    W = [[0]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                W[i][j] = NEG_INF  # evitar lazo
+            else:
+                w = A[i][j]
+                W[i][j] = (NEG_INF if w == 0 else w)
 
-    stats = Stats()
+    # DP[mask][j] = mejor peso del camino que empieza en anchor y termina en j visitando 'mask'
+    # 'mask' SIEMPRE incluye anchor y j. Representamos con entero bitmask.
+    size = 1 << n
+    DP = [[NEG_INF] * n for _ in range(size)]
+    parent = [[-1] * n for _ in range(size)]
 
-    # MRV-ish: cuántos vecinos prohibidos tiene cada sala
-    zeros_count = [sum(1 for j in range(n) if A[i][j] == 0) for i in range(n)]
+    start_mask = 1 << anchor
+    # transiciones base: anchor -> j
+    for j in range(n):
+        if j == anchor:
+            continue
+        if W[anchor][j] == NEG_INF:
+            continue
+        m = start_mask | (1 << j)
+        DP[m][j] = W[anchor][j]
+        parent[m][j] = anchor
 
-    best = {"score": -10**9, "perm": None}
-    backtrack(stats, slots, 1, remaining, 0, A, n, zeros_count, best)
-    return best["perm"], best["score"], stats
+    # recorrer máscaras que incluyen anchor
+    for mask in range(size):
+        if (mask & start_mask) == 0:
+            continue
+        # para cada extremo j en mask
+        for j in range(n):
+            if j == anchor or DP[mask][j] == NEG_INF:
+                continue
+            # intentar extender a k no visitado
+            rem = (~mask) & (size - 1)
+            k = rem
+            while k:
+                lsb = k & -k
+                idx = (lsb.bit_length() - 1)
+                k ^= lsb
+                if W[j][idx] == NEG_INF:
+                    continue
+                m2 = mask | (1 << idx)
+                val = DP[mask][j] + W[j][idx]
+                if val > DP[m2][idx]:
+                    DP[m2][idx] = val
+                    parent[m2][idx] = j
+
+    full = (1 << n) - 1
+    # cerrar ciclo: sumar arista j->anchor
+    best_score = NEG_INF
+    best_end = -1
+    for j in range(n):
+        if j == anchor:
+            continue
+        if DP[full][j] == NEG_INF or W[j][anchor] == NEG_INF:
+            continue
+        total = DP[full][j] + W[j][anchor]
+        if total > best_score:
+            best_score = total
+            best_end = j
+
+    if best_end == -1:
+        raise RuntimeError("No existe ciclo factible con las restricciones actuales.")
+
+    # reconstruir permutación
+    perm = [anchor] * n
+    mask = full
+    j = best_end
+    for pos in range(n - 1, 0, -1):
+        perm[pos] = j
+        pj = parent[mask][j]
+        mask ^= (1 << j)
+        j = pj
+    perm[0] = anchor
+
+    return perm, best_score

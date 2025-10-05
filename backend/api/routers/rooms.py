@@ -1,9 +1,12 @@
 from enum import Enum
+import json
 from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from genetic_test import gen_nodos
 from logica.objetos.hexagono import Piso
+from logica.prueba import mejor_orden
 
 PREFIX = "/rooms"
 
@@ -45,14 +48,6 @@ class Formulario(BaseModel):
     mantenimiento: bool
     soporte_vital: bool
     notas: str
-
-
-@router.post("/")
-def obtener_piso(payload: Formulario):
-    # hacer algo y entregar matriz
-    matriz = Piso(1, 0.25).hexagonos()
-
-    return matriz
 
 
 @router.get("/{id}")
