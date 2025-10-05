@@ -62,9 +62,12 @@
     const material = new THREE.MeshPhongMaterial({color:0x00ffcc, side:THREE.DoubleSide, flatShading:true});
 
     hexRings.forEach((coords, i) => {
-      const shape = makePolygon(coords);
-      const geometry = new THREE.ShapeGeometry(shape);
-      const mesh = new THREE.Mesh(geometry, material);
+    const shape = makePolygon(coords);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.5,        // “alto” del prisma
+      bevelEnabled: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
       mesh.position.z = -i * 0.05; // un poco de separación
       scene.add(mesh);
     });
