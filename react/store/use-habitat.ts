@@ -50,35 +50,28 @@ export const useHabitat = create<HabitatStore>((set, get) => ({
   // Generate habitat from inputs
   generateHabitat: () => {
     set({ isGenerating: true })
-
     const { inputs, mode } = get()
-
-    // Calculate radius
     const radius = calculateRadius(inputs)
-
-    // Create zones from selected functions
     const zones = createZones(inputs.functions, radius)
-
-    // Generate grid and assign cells to zones
     const zonesWithCells = generateGrid(radius, zones)
 
-    // Get objects needed for these functions
-    const objects = getObjectsForFunctions(inputs.functions, inputs.crew)
+    getObjectsForFunctions(inputs.functions, inputs.crew).then((objects) => {
+      console.log(inputs.functions)
+      let placements: Placement[] = []
+      if (mode === "auto") {
+        placements = autoPlaceObjects(objects, zonesWithCells)
+      }
 
-    let placements: Placement[] = []
-    if (mode === "auto") {
-      placements = autoPlaceObjects(objects, zonesWithCells)
-    }
+      const validation = validateLayout(zonesWithCells, placements, objects)
 
-    const validation = validateLayout(zonesWithCells, placements, objects)
-
-    set({
-      radius,
-      zones: zonesWithCells,
-      objects,
-      placements,
-      validationResults: validation.results,
-      isGenerating: false,
+      set({
+        radius,
+        zones: zonesWithCells,
+        objects,
+        placements,
+        validationResults: validation.results,
+        isGenerating: false,
+      })
     })
   },
 
