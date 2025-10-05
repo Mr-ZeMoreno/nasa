@@ -12,5 +12,3 @@ export const FUNCTION_ITEMS = [
   { id: "window_viewing",     v4: 4.62,  v6: 4.62 },
 ];
 
-// (opcional) metadatos mínimos del esquema
-export const FUNCTION_SCHEMA = { schemaVersion: 1, units: "m^3" };
