@@ -104,7 +104,7 @@
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
         const checked = document.querySelectorAll('.form-group input[type="checkbox"]:checked');
-        if (checked.length > 2) {
+        if (checked.length > 3) {
             // deshacer la última acción
             e.target.checked = false;
             alert('Solo puedes seleccionar un máximo de 2 opciones.');
@@ -140,7 +140,7 @@
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
         const checked = document.querySelectorAll('.form-group input[type="checkbox"]:checked');
-        if (checked.length > 2) {
+        if (checked.length > 3) {
             e.target.checked = false;
             alert('Solo puedes seleccionar un máximo de 2 opciones.');
         }
@@ -167,5 +167,6 @@
   <!-- Scripts: respeta mayúsculas y nombres -->
   <script src="Scripts/uiFormScript.js" defer></script>
   <script src="Scripts/formScripts.js" defer></script>
+
 </body>
 </html>
