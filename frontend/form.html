@@ -33,8 +33,8 @@
         <label for="habitat">Hábitat</label>
         <select id="habitat" name="habitat" required>
           <option value="">Selecciona una opción</option>
-          <option value="luna">Base lunar</option>
-          <option value="marte">Colonia marciana</option>
+          <option value="luna">Luna</option>
+          <option value="marte">Marte</option>
         </select>
       </div>
 
@@ -74,32 +74,21 @@
         </div>
       </div>
 
-      <!-- Prioridades Drag & Drop dasd-->  
+      <!-- Preferencias -->  
       <div class="form-group">
-        <p class="group-label">Prioriza tus áreas funcionales (arrastra para ordenar)</p>
-        <ul id="prioridad" class="priority-list">
-          <li draggable="true" data-id="galley">Cocina/Alimentos <span class="pill">crew/escala</span></li>
-          <li draggable="true" data-id="exercise">Ejercicio <span class="pill">por-peldaños</span></li>
-          <li draggable="true" data-id="hygiene">Higiene <span class="pill">crew/escala</span></li>
-          <li draggable="true" data-id="recreation">Recreación <span class="pill">opcional</span></li>
-          <li draggable="true" data-id="sleep">Sueño <span class="pill">crew/escala</span></li>
-          <li draggable="true" data-id="maintenance">Mantenimiento/Repair <span class="pill">volumen fijo</span></li>
-        </ul>
-      </div>
-
-
-      <!-- Checkboxes -->
-      <div class="form-group">
-        <label>Opciones adicionales</label>
+        <p>Opciones adicionales</p>
         <div>
-          <input type="checkbox" id="mantenimiento" name="mantenimiento" />
-          <label for="mantenimiento">Mantenimiento automatizado</label>
+          <input type="checkbox" id="aerobic" name="aerobic" />
+          <label for="aerobic">Aerobic exercise</label>
         </div>
-        <div>
-          <input type="checkbox" id="soporte_vital" name="soporte_vital" />
-          <label for="soporte_vital">Soporte vital activo</label>
+        <br>
+        <div style="display: inline !important;">
+            <label style="display: inline;" for="resistance">Resistance exercise</label>
+            <input style="all: revert;" type="checkbox" id="resistance" name="resistance" />    
         </div>
-      </div>
+
+    </div>
+
 
       <!-- Notas -->
       <div class="form-group">
