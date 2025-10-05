@@ -9,6 +9,11 @@ export interface HexCoord {
   r: number // axial coordinate
 }
 
+export interface SectorCoord {
+  hex: HexCoord // parent hexagon
+  sector: number // sector index 0-5 (clockwise from top)
+}
+
 export interface PixelCoord {
   x: number
   y: number
@@ -38,7 +43,7 @@ export interface Placement {
   id: string
   objectId: string
   zoneId: string
-  cells: HexCoord[]
+  sectors: SectorCoord[] // changed from cells: HexCoord[]
 }
 
 export interface RuleResult {

@@ -1,4 +1,4 @@
-import type { HexCoord, PixelCoord } from "./types"
+import type { HexCoord, PixelCoord, SectorCoord } from "./types"
 
 // Hexagon math utilities using axial coordinates (q, r)
 // Reference: https://www.redblobgames.com/grids/hexagons/
@@ -162,4 +162,71 @@ export function hexToKey(hex: HexCoord): string {
 export function keyToHex(key: string): HexCoord {
   const [q, r] = key.split(",").map(Number)
   return { q, r }
+}
+
+/**
+ * Convert sector coordinate to string key for maps
+ */
+export function sectorToKey(sector: SectorCoord): string {
+  return `${sector.hex.q},${sector.hex.r}:${sector.sector}`
+}
+
+/**
+ * Convert string key back to sector coordinate
+ */
+export function keyToSector(key: string): SectorCoord {
+  const [hexPart, sectorPart] = key.split(":")
+  const [q, r] = hexPart.split(",").map(Number)
+  return {
+    hex: { q, r },
+    sector: Number(sectorPart),
+  }
+}
+
+/**
+ * Get the 6 triangular sector vertices for a hexagon
+ * Each sector is defined by [center, vertex_i, vertex_(i+1)]
+ */
+export function getSectorVertices(
+  center: PixelCoord,
+  hexCenter: PixelCoord,
+  size: number,
+  sectorIndex: number,
+): PixelCoord[] {
+  const hexVerts = hexVertices(center, size)
+  const nextIndex = (sectorIndex + 1) % 6
+
+  return [hexCenter, hexVerts[sectorIndex], hexVerts[nextIndex]]
+}
+
+/**
+ * Get all 6 sectors for a hexagon
+ */
+export function getHexagonSectors(hex: HexCoord): SectorCoord[] {
+  const sectors: SectorCoord[] = []
+  for (let i = 0; i < 6; i++) {
+    sectors.push({ hex, sector: i })
+  }
+  return sectors
+}
+
+/**
+ * Check if a sector is adjacent to another sector
+ */
+export function areSectorsAdjacent(a: SectorCoord, b: SectorCoord): boolean {
+  // Same hexagon, adjacent sectors
+  if (hexEqual(a.hex, b.hex)) {
+    const diff = Math.abs(a.sector - b.sector)
+    return diff === 1 || diff === 5
+  }
+
+  // Different hexagons - check if they share an edge
+  const neighbors = hexNeighbors(a.hex)
+  const isNeighbor = neighbors.some((n) => hexEqual(n, b.hex))
+
+  if (!isNeighbor) return false
+
+  // Check if sectors are on the shared edge
+  // This is a simplified check - sectors on opposite sides of shared edge are adjacent
+  return true
 }

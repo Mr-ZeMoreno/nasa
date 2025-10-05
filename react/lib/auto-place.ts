@@ -1,11 +1,11 @@
-import type { Zone, HabitatObject, Placement, HexCoord } from "@/lib/types"
+import type { Zone, HabitatObject, Placement, SectorCoord } from "@/lib/types"
 import { validatePlacement } from "@/rules/validate"
-import { hexToKey, hexDistance } from "@/lib/hex"
+import { sectorToKey, hexDistance, getHexagonSectors } from "@/lib/hex"
 import { nanoid } from "nanoid"
 
 interface PlacementCandidate {
   zone: Zone
-  cells: HexCoord[]
+  sectors: SectorCoord[]
   score: number
 }
 
@@ -18,16 +18,14 @@ export function autoPlaceObjects(
   existingPlacements: Placement[] = [],
 ): Placement[] {
   const placements: Placement[] = [...existingPlacements]
-  const occupiedCells = new Set<string>()
+  const occupiedSectors = new Set<string>()
 
-  // Mark existing placements as occupied
   existingPlacements.forEach((p) => {
-    p.cells.forEach((cell) => occupiedCells.add(hexToKey(cell)))
+    p.sectors.forEach((sector) => occupiedSectors.add(sectorToKey(sector)))
   })
 
   // Sort objects by priority (larger objects first, then by tags)
   const sortedObjects = [...objects].sort((a, b) => {
-    // Priority order: sleep > galley > hygiene > eclss > exercise > medical > stowage
     const priority: Record<string, number> = {
       sleep: 7,
       food: 6,
@@ -43,19 +41,16 @@ export function autoPlaceObjects(
 
     if (aPriority !== bPriority) return bPriority - aPriority
 
-    // Then by size (larger first)
     return b.slots - a.slots
   })
 
-  // Place each object
   for (const object of sortedObjects) {
-    const placement = findBestPlacement(object, zones, placements, objects, occupiedCells)
+    const placement = findBestPlacement(object, zones, placements, objects, occupiedSectors)
 
     if (placement) {
       placements.push(placement)
-      placement.cells.forEach((cell) => occupiedCells.add(hexToKey(cell)))
+      placement.sectors.forEach((sector) => occupiedSectors.add(sectorToKey(sector)))
 
-      // Update zone used slots
       const zone = zones.find((z) => z.id === placement.zoneId)
       if (zone) {
         zone.usedSlots += object.slots
@@ -76,36 +71,36 @@ function findBestPlacement(
   zones: Zone[],
   existingPlacements: Placement[],
   allObjects: HabitatObject[],
-  occupiedCells: Set<string>,
+  occupiedSectors: Set<string>,
 ): Placement | null {
   const candidates: PlacementCandidate[] = []
 
   // Find compatible zones
   const compatibleZones = zones.filter((zone) => {
-    // Check if zone allows all object tags
     const hasCompatibleTags = object.tags.every((tag) => zone.allowedTags.includes(tag))
-
-    // Check if zone has capacity
     const hasCapacity = zone.usedSlots + object.slots <= zone.capacitySlots
-
     return hasCompatibleTags && hasCapacity
   })
 
-  // Try to find valid placements in each compatible zone
   for (const zone of compatibleZones) {
-    const availableCells = zone.cells.filter((cell) => !occupiedCells.has(hexToKey(cell)))
+    // Get all sectors in this zone
+    const allSectorsInZone: SectorCoord[] = []
+    zone.cells.forEach((cell) => {
+      allSectorsInZone.push(...getHexagonSectors(cell))
+    })
+
+    const availableSectors = allSectorsInZone.filter((sector) => !occupiedSectors.has(sectorToKey(sector)))
 
     // Try different starting positions
-    for (const startCell of availableCells) {
-      const cellGroup = findContiguousCells(startCell, object.slots, availableCells, occupiedCells)
+    for (const startSector of availableSectors) {
+      const sectorGroup = findContiguousSectors(startSector, object.slots, zone.cells, occupiedSectors)
 
-      if (cellGroup.length === object.slots) {
-        // Score this placement
-        const score = scorePlacement(object, zone, cellGroup, zones, existingPlacements, allObjects)
+      if (sectorGroup.length === object.slots) {
+        const score = scorePlacement(object, zone, sectorGroup, zones, existingPlacements, allObjects)
 
         candidates.push({
           zone,
-          cells: cellGroup,
+          sectors: sectorGroup,
           score,
         })
       }
@@ -115,11 +110,16 @@ function findBestPlacement(
   // Sort candidates by score (higher is better)
   candidates.sort((a, b) => b.score - a.score)
 
-  // Return best valid placement
   for (const candidate of candidates) {
-    const validation = validatePlacement(object, candidate.zone, candidate.cells, zones, existingPlacements, allObjects)
+    const validation = validatePlacement(
+      object,
+      candidate.zone,
+      candidate.sectors,
+      zones,
+      existingPlacements,
+      allObjects,
+    )
 
-    // Accept if no hard failures
     const hasHardFailure = validation.results.some((r) => r.severity === "hard" && !r.ok)
 
     if (!hasHardFailure) {
@@ -127,7 +127,7 @@ function findBestPlacement(
         id: nanoid(),
         objectId: object.id,
         zoneId: candidate.zone.id,
-        cells: candidate.cells,
+        sectors: candidate.sectors,
       }
     }
   }
@@ -136,46 +136,33 @@ function findBestPlacement(
 }
 
 /**
- * Find contiguous cells starting from a seed cell
+ * Find contiguous sectors starting from a seed sector
  */
-function findContiguousCells(
-  startCell: HexCoord,
+function findContiguousSectors(
+  startSector: SectorCoord,
   count: number,
-  availableCells: HexCoord[],
-  occupiedCells: Set<string>,
-): HexCoord[] {
-  const result: HexCoord[] = [startCell]
-  const visited = new Set<string>([hexToKey(startCell)])
-
-  const queue: HexCoord[] = [startCell]
+  availableCells: any[],
+  occupiedSectors: Set<string>,
+): SectorCoord[] {
+  const result: SectorCoord[] = [startSector]
+  const visited = new Set<string>([sectorToKey(startSector)])
+  const queue: SectorCoord[] = [startSector]
 
   while (queue.length > 0 && result.length < count) {
     const current = queue.shift()!
 
-    // Get neighbors
-    const neighbors = [
-      { q: current.q + 1, r: current.r },
-      { q: current.q + 1, r: current.r - 1 },
-      { q: current.q, r: current.r - 1 },
-      { q: current.q - 1, r: current.r },
-      { q: current.q - 1, r: current.r + 1 },
-      { q: current.q, r: current.r + 1 },
-    ]
+    // Get adjacent sectors
+    const adjacentSectors = getAdjacentSectors(current, availableCells)
 
-    for (const neighbor of neighbors) {
-      const key = hexToKey(neighbor)
+    for (const neighbor of adjacentSectors) {
+      const key = sectorToKey(neighbor)
 
-      if (!visited.has(key) && !occupiedCells.has(key)) {
-        // Check if neighbor is in available cells
-        const isAvailable = availableCells.some((cell) => cell.q === neighbor.q && cell.r === neighbor.r)
+      if (!visited.has(key) && !occupiedSectors.has(key)) {
+        result.push(neighbor)
+        visited.add(key)
+        queue.push(neighbor)
 
-        if (isAvailable) {
-          result.push(neighbor)
-          visited.add(key)
-          queue.push(neighbor)
-
-          if (result.length >= count) break
-        }
+        if (result.length >= count) break
       }
     }
   }
@@ -184,12 +171,45 @@ function findContiguousCells(
 }
 
 /**
+ * Get adjacent sectors (within same hex and neighboring hexes)
+ */
+function getAdjacentSectors(sector: SectorCoord, availableCells: any[]): SectorCoord[] {
+  const adjacent: SectorCoord[] = []
+
+  // Adjacent sectors in same hexagon
+  const prevSector = (sector.sector + 5) % 6
+  const nextSector = (sector.sector + 1) % 6
+  adjacent.push({ hex: sector.hex, sector: prevSector })
+  adjacent.push({ hex: sector.hex, sector: nextSector })
+
+  // Adjacent sectors in neighboring hexagons
+  const neighbors = [
+    { q: sector.hex.q + 1, r: sector.hex.r },
+    { q: sector.hex.q + 1, r: sector.hex.r - 1 },
+    { q: sector.hex.q, r: sector.hex.r - 1 },
+    { q: sector.hex.q - 1, r: sector.hex.r },
+    { q: sector.hex.q - 1, r: sector.hex.r + 1 },
+    { q: sector.hex.q, r: sector.hex.r + 1 },
+  ]
+
+  neighbors.forEach((neighborHex) => {
+    const isAvailable = availableCells.some((cell: any) => cell.q === neighborHex.q && cell.r === neighborHex.r)
+    if (isAvailable) {
+      const oppositeSector = (sector.sector + 3) % 6
+      adjacent.push({ hex: neighborHex, sector: oppositeSector })
+    }
+  })
+
+  return adjacent
+}
+
+/**
  * Score a placement candidate (higher is better)
  */
 function scorePlacement(
   object: HabitatObject,
   zone: Zone,
-  cells: HexCoord[],
+  sectors: SectorCoord[],
   allZones: Zone[],
   existingPlacements: Placement[],
   allObjects: HabitatObject[],
@@ -211,9 +231,7 @@ function scorePlacement(
     score += 40
   }
 
-  // Bonus for proximity to related functions
   if (object.tags.includes("food")) {
-    // Galley near stowage
     const storagePlacements = existingPlacements.filter((p) => {
       const obj = allObjects.find((o) => o.id === p.objectId)
       return obj?.tags.includes("storage")
@@ -223,9 +241,9 @@ function scorePlacement(
       let minDistance = Number.POSITIVE_INFINITY
 
       storagePlacements.forEach((p) => {
-        p.cells.forEach((storageCell) => {
-          cells.forEach((cell) => {
-            minDistance = Math.min(minDistance, hexDistance(cell, storageCell))
+        p.sectors.forEach((storageSector) => {
+          sectors.forEach((sector) => {
+            minDistance = Math.min(minDistance, hexDistance(sector.hex, storageSector.hex))
           })
         })
       })
@@ -236,8 +254,8 @@ function scorePlacement(
     }
   }
 
-  // Penalty for being far from center (prefer compact layouts)
-  const avgDistanceFromCenter = cells.reduce((sum, cell) => sum + hexDistance(cell, { q: 0, r: 0 }), 0) / cells.length
+  const avgDistanceFromCenter =
+    sectors.reduce((sum, sector) => sum + hexDistance(sector.hex, { q: 0, r: 0 }), 0) / sectors.length
 
   score -= avgDistanceFromCenter * 2
 

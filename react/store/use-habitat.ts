@@ -82,13 +82,13 @@ export const useHabitat = create<HabitatStore>((set, get) => ({
 
   // Add placement
   addPlacement: (placement) => {
-    const { placements, zones } = get()
+    const { placements, zones, objects } = get()
 
-    // Update zone used slots
+    const object = objects.find((o) => o.id === placement.objectId)
     const zone = zones.find((z) => z.id === placement.zoneId)
-    if (zone) {
+    if (zone && object) {
       const updatedZones = zones.map((z) =>
-        z.id === placement.zoneId ? { ...z, usedSlots: z.usedSlots + placement.cells.length } : z,
+        z.id === placement.zoneId ? { ...z, usedSlots: z.usedSlots + object.slots } : z,
       )
       set({ zones: updatedZones })
     }
