@@ -1,5 +1,7 @@
 import type { HexCoord, PixelCoord, SectorCoord } from "./types"
 
+import * as THREE from "three";
+
 // Hexagon math utilities using axial coordinates (q, r)
 // Reference: https://www.redblobgames.com/grids/hexagons/
 
@@ -136,18 +138,75 @@ export function hexNeighbors(hex: HexCoord): HexCoord[] {
 /**
  * Get vertices of a hexagon for rendering (flat-top orientation)
  */
-export function hexVertices(center: PixelCoord, size: number): PixelCoord[] {
-  const vertices: PixelCoord[] = []
-  for (let i = 0; i < 6; i++) {
-    const angleDeg = 60 * i
-    const angleRad = (Math.PI / 180) * angleDeg
-    vertices.push({
-      x: center.x + size * Math.cos(angleRad),
-      y: center.y + size * Math.sin(angleRad),
+const API = "http://localhost:8000/formas/"
+
+export const hexVertices = async (center: PixelCoord, size: number): Promise<PixelCoord[]> => {
+  try {
+    const payload = {
+      centro: [[center.x], [center.y], [0]], // así espera tu backend
+      radio: size,
+    }
+
+    const response = await fetch(`${API}/hex`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const rawData: number[][][] = await response.json()
+
+    // transformar [[x],[y],[z]] -> {x,y}
+    const data: PixelCoord[] = rawData.map((colVector) => ({
+      x: colVector[0][0],
+      y: colVector[1][0],
+    }))
+
+    return data
+  } catch (error) {
+    console.error("Error fetching hex vertices:", error)
+    return []
   }
-  return vertices
 }
+
+export const createFloorMeshes = async (): Promise<THREE.Mesh[]> => {
+  try {
+    const response = await fetch(`${API}/piso`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const rawData: number[][][][] = await response.json();
+
+    // cada hexágono
+    const meshes: THREE.Mesh[] = rawData.map(hex => {
+      const vertices: PixelCoord[] = hex.map(v => ({ x: v[0][0], y: v[1][0] }));
+
+      // crear Shape
+      const shape = new THREE.Shape();
+      shape.moveTo(vertices[0].x, vertices[0].y);
+      for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y);
+      shape.closePath();
+
+      // extruir
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
+      const material = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      return mesh;
+    });
+
+    return meshes;
+  } catch (err) {
+    console.error("Error fetching floor:", err);
+    return [];
+  }
+};
+
+
 
 /**
  * Convert hex coordinate to string key for maps

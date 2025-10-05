@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from routers.rooms import router as rooms_router
 from routers.habitats import router as habitats_router
+from routers.formas import router as formas_router
+
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -22,3 +24,4 @@ app.add_middleware(
 
 app.include_router(rooms_router)
 app.include_router(habitats_router)
+app.include_router(formas_router)
