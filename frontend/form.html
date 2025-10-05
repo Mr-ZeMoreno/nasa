@@ -3,6 +3,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+<<<<<<< Updated upstream
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Formulario - Your Home in the Space</title>
 
@@ -13,6 +14,11 @@
 
   <!-- OJO: Respeta mayúsculas del árbol -->
   <link rel="stylesheet" href="Styles/formStyle.css" />
+=======
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulario - Your Home in the Space</title>
+  <link rel="stylesheet" href="Styles/formStyle.css"/>
+>>>>>>> Stashed changes
 </head>
 <body>
   <div class="form-container">
@@ -21,6 +27,7 @@
       <p class="form-subtitle">Completa los siguientes datos para comenzar a diseñar tu hábitat espacial</p>
     </div>
 
+<<<<<<< Updated upstream
     <form id="designForm" class="space-form">
       <!-- Nombre -->
       <div class="form-group">
@@ -97,15 +104,47 @@
       </div>
 
       <!-- Acciones -->
+=======
+    <form class="space-form" id="spaceForm" novalidate>
+      <div class="form-group">
+        <label for="nombre">Nombre del proyecto</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Mi hábitat espacial" required>
+      </div>
+
+      <div class="form-group">
+        <label for="tipo">Tipo de hábitat</label>
+        <select id="tipo" name="tipo" required>
+          <option value="">Selecciona una opción</option>
+          <option value="estacion">Estación espacial</option>
+          <option value="lunar">Base lunar</option>
+          <option value="marciana">Colonia marciana</option>
+          <option value="orbital">Hábitat orbital</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="capacidad">Capacidad de tripulación</label>
+        <input type="number" id="capacidad" name="capacidad" placeholder="Número de personas" min="1" required>
+      </div>
+
+      <div class="form-group">
+        <label for="prioridades">Prioridades principales</label>
+        <textarea id="prioridades" name="prioridades" rows="4" placeholder="Describe las funcionalidades más importantes para tu hábitat..." required></textarea>
+      </div>
+
+>>>>>>> Stashed changes
       <div class="form-actions">
         <a href="index.html" class="btn btn-secondary">Volver</a>
         <button type="submit" class="btn btn-primary">Crear mi hábitat</button>
       </div>
     </form>
   </div>
+<<<<<<< Updated upstream
 
   <!-- Scripts: respeta mayúsculas y nombres -->
   <script src="Scripts/uiFormScript.js" defer></script>
   <script src="Scripts/formScripts.js" defer></script>
+=======
+>>>>>>> Stashed changes
 </body>
 </html>
