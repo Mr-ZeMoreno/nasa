@@ -449,8 +449,7 @@ export function HabitatCanvas() {
 
       {mode === "manual" && (
         <div className="absolute top-4 left-4 bg-card/90 backdrop-blur p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Manual Mode: Click on sectors to place objects</p>
-          <p className="text-xs text-muted-foreground mt-1">Each hexagon has 6 triangular sectors</p>
+          
           {selectedObject && (
             <p className="text-xs text-primary mt-2 font-medium">
               Selected: {selectedObject.name} ({selectedObject.slots}{" "}

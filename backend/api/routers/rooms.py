@@ -34,7 +34,7 @@ class Formulario(BaseModel):
     tripulantes: int = Field(ge=1)
     tipo_geometria: TipoGeom
     geometria: Geom
-    prioridad: conlist(str, min_items=0)  # lista de strings
+    prioridad: list[str]  # lista de strings
     mantenimiento: bool
     soporte_vital: bool
     notas: str
