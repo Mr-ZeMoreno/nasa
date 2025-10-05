@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
 
 const AVAILABLE_FUNCTIONS = [
   { id: "sleep", label: "Sleep Quarters" },
@@ -21,10 +23,12 @@ const AVAILABLE_FUNCTIONS = [
 export function HabitatForm() {
   const { inputs, setInputs, generateHabitat, isGenerating } = useHabitat()
   const [localInputs, setLocalInputs] = useState(inputs)
+  const [useManualRadius, setUseManualRadius] = useState(false)
+  const [manualRadius, setManualRadius] = useState(6)
 
   const handleGenerate = () => {
     setInputs(localInputs)
-    generateHabitat()
+    generateHabitat(useManualRadius ? manualRadius : undefined)
   }
 
   const toggleFunction = (funcId: string) => {
@@ -34,6 +38,17 @@ export function HabitatForm() {
 
     setLocalInputs({ ...localInputs, functions: newFunctions })
   }
+
+  const estimatedRadius = Math.ceil(
+    (-3 +
+      Math.sqrt(
+        9 + 12 * (8 * localInputs.crew + 12 * localInputs.functions.length + 2 * (localInputs.durationDays / 30) - 1),
+      )) /
+      6,
+  )
+
+  const activeRadius = useManualRadius ? manualRadius : estimatedRadius
+  const totalCells = 3 * activeRadius * activeRadius + 3 * activeRadius + 1
 
   return (
     <Card className="p-6 space-y-6 bg-card/50 backdrop-blur border-border/50">
@@ -92,6 +107,33 @@ export function HabitatForm() {
               ))}
             </div>
           </div>
+
+          <div className="space-y-3 pt-2 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="manual-radius" className="text-sm text-muted-foreground">
+                Manual Radius Control
+              </Label>
+              <Switch id="manual-radius" checked={useManualRadius} onCheckedChange={setUseManualRadius} />
+            </div>
+
+            {useManualRadius && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Radius</span>
+                  <span className="text-sm font-mono text-foreground">{manualRadius}</span>
+                </div>
+                <Slider
+                  value={[manualRadius]}
+                  onValueChange={(value) => setManualRadius(value[0])}
+                  min={3}
+                  max={12}
+                  step={1}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">Adjust the habitat size manually (3-12 rings)</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -102,42 +144,12 @@ export function HabitatForm() {
       <div className="pt-4 border-t border-border/50">
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex justify-between">
-            <span>Estimated Radius:</span>
-            <span className="text-foreground font-mono">
-              {Math.ceil(
-                (-3 +
-                  Math.sqrt(
-                    9 +
-                      12 *
-                        (8 * localInputs.crew +
-                          12 * localInputs.functions.length +
-                          2 * (localInputs.durationDays / 30) -
-                          1),
-                  )) /
-                  6,
-              )}{" "}
-              cells
-            </span>
+            <span>{useManualRadius ? "Manual Radius:" : "Estimated Radius:"}</span>
+            <span className="text-foreground font-mono">{activeRadius} rings</span>
           </div>
           <div className="flex justify-between">
             <span>Total Cells:</span>
-            <span className="text-foreground font-mono">
-              {(() => {
-                const R = Math.ceil(
-                  (-3 +
-                    Math.sqrt(
-                      9 +
-                        12 *
-                          (8 * localInputs.crew +
-                            12 * localInputs.functions.length +
-                            2 * (localInputs.durationDays / 30) -
-                            1),
-                    )) /
-                    6,
-                )
-                return 3 * R * R + 3 * R + 1
-              })()}
-            </span>
+            <span className="text-foreground font-mono">{totalCells}</span>
           </div>
         </div>
       </div>

@@ -1,62 +1,53 @@
+# routers/rooms.py
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, conlist
 
 from logica.objetos.hexagono import Piso
 
 PREFIX = "/rooms"
+router = APIRouter(prefix=PREFIX, tags=["Rooms"])
 
-router = APIRouter(prefix=f"{PREFIX}",
-                   tags=["Rooms"])
-
-
-class Habitats(Enum):
+class Habitats(str, Enum):
     luna = "luna"
     marte = "marte"
 
-
 class Cilindro(BaseModel):
-    longitud: float
-    diametro: float
-
+    longitud: float = Field(gt=0)
+    diametro: float = Field(gt=0)
 
 class Domo(BaseModel):
-    diametro: float
+    diametro: float = Field(gt=0)
 
-
-class TipoGeom(Enum):
+class TipoGeom(str, Enum):
     cilindro = "cilindro"
-    esfera = "domo"
-
+    domo = "domo"  # <- corregido
 
 class Geom(BaseModel):
-    cilindro: Optional[Cilindro]
-    domo: Optional[Domo]
-
+    cilindro: Optional[Cilindro] = None
+    domo: Optional[Domo] = None
 
 class Formulario(BaseModel):
     nombre: str
     habitat: Habitats
-    tripulantes: int
+    tripulantes: int = Field(ge=1)
     tipo_geometria: TipoGeom
     geometria: Geom
-    prioridad: list
+    prioridad: conlist(str, min_items=0)  # lista de strings
     mantenimiento: bool
     soporte_vital: bool
     notas: str
 
-
 @router.post("/")
 def obtener_piso(payload: Formulario):
-    # hacer algo y entregar matriz
+    # TODO: usa payload para parametrizar (radio/espesor) si quieres
     matriz = Piso(1, 0.25).hexagonos()
-
+    # Asegúrate de que 'matriz' sea JSON-serializable (listas/nums)
     return matriz
 
-
 @router.get("/{id}")
-def obtener_room_data():
+def obtener_room_data(id: str):
     return {
         "room": "baño-1",
         "contenido": [
@@ -67,6 +58,6 @@ def obtener_room_data():
             "Limpieza de manos",
             "Higiene Bucal",
             "PW SA",
-            "Shaving"
-        ]
+            "Shaving",
+        ],
     }

@@ -6,15 +6,17 @@ import { getObjectsForFunctions } from "@/data/catalog-objects"
 import { generateGrid } from "@/lib/grid-generator"
 import { autoPlaceObjects } from "@/lib/auto-place"
 import { validateLayout } from "@/rules/validate"
+import { generateFloorPlan } from "@/lib/api-client"
 
 interface HabitatStore extends HabitatState {
   // State
   validationResults: RuleResult[]
   isGenerating: boolean
+  floorMatrix: number[][]
 
   // Actions
   setInputs: (inputs: HabitatInputs) => void
-  generateHabitat: () => void
+  generateHabitat: (manualRadius?: number) => void
   setMode: (mode: "auto" | "manual") => void
   addPlacement: (placement: Placement) => void
   removePlacement: (placementId: string) => void
@@ -41,22 +43,35 @@ export const useHabitat = create<HabitatStore>((set, get) => ({
   mode: "auto",
   validationResults: [],
   isGenerating: false,
+  floorMatrix: [],
 
   // Set inputs
   setInputs: (inputs) => {
     set({ inputs })
   },
 
-  // Generate habitat from inputs
-  generateHabitat: () => {
+  // Generate habitat
+  generateHabitat: async (manualRadius?: number) => {
     set({ isGenerating: true })
     const { inputs, mode } = get()
-    const radius = calculateRadius(inputs)
-    const zones = createZones(inputs.functions, radius)
-    const zonesWithCells = generateGrid(radius, zones)
 
-    getObjectsForFunctions(inputs.functions, inputs.crew).then((objects) => {
-      console.log(inputs.functions)
+    try {
+      // Call the API to generate floor plan
+      const apiResponse = await generateFloorPlan({
+        crew: inputs.crew,
+        duration_days: inputs.durationDays,
+        functions: inputs.functions,
+      })
+
+      // Store the floor matrix from API
+      set({ floorMatrix: apiResponse.floor || [] })
+
+      const radius = manualRadius ?? calculateRadius(inputs)
+      const zones = createZones(inputs.functions, radius)
+      const zonesWithCells = generateGrid(radius, zones)
+
+      const objects = await getObjectsForFunctions(inputs.functions, inputs.crew)
+
       let placements: Placement[] = []
       if (mode === "auto") {
         placements = autoPlaceObjects(objects, zonesWithCells)
@@ -72,7 +87,33 @@ export const useHabitat = create<HabitatStore>((set, get) => ({
         validationResults: validation.results,
         isGenerating: false,
       })
-    })
+    } catch (error) {
+      console.error("Failed to generate habitat:", error)
+      set({ isGenerating: false })
+
+      // Fallback to local generation if API fails
+      const radius = manualRadius ?? calculateRadius(inputs)
+      const zones = createZones(inputs.functions, radius)
+      const zonesWithCells = generateGrid(radius, zones)
+
+      const objects = await getObjectsForFunctions(inputs.functions, inputs.crew)
+
+      let placements: Placement[] = []
+      if (mode === "auto") {
+        placements = autoPlaceObjects(objects, zonesWithCells)
+      }
+
+      const validation = validateLayout(zonesWithCells, placements, objects)
+
+      set({
+        radius,
+        zones: zonesWithCells,
+        objects,
+        placements,
+        validationResults: validation.results,
+        isGenerating: false,
+      })
+    }
   },
 
   // Set mode
@@ -138,6 +179,7 @@ export const useHabitat = create<HabitatStore>((set, get) => ({
       placements: [],
       validationResults: [],
       mode: "auto",
+      floorMatrix: [],
     })
   },
 

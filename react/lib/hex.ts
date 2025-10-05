@@ -1,6 +1,6 @@
-import type { HabitatObject, HexCoord, PixelCoord, SectorCoord } from "./types"
+import type { HexCoord, PixelCoord, SectorCoord } from "./types"
 
-import * as THREE from "three";
+import * as THREE from "three"
 
 // Hexagon math utilities using axial coordinates (q, r)
 // Reference: https://www.redblobgames.com/grids/hexagons/
@@ -137,76 +137,40 @@ export function hexNeighbors(hex: HexCoord): HexCoord[] {
 
 /**
  * Get vertices of a hexagon for rendering (flat-top orientation)
+ * Returns 6 vertices in clockwise order starting from the right
  */
-const API = "http://localhost:8000/formas"
+export function getHexVertices(center: PixelCoord, size: number): PixelCoord[] {
+  const vertices: PixelCoord[] = []
 
-export const hexVertices = async (center: PixelCoord, size: number): Promise<PixelCoord[]> => {
-  try {
-    const payload = {
-      centro: [[center.x], [center.y], [0]], // así espera tu backend
-      radio: size,
-    }
-
-    const response = await fetch(`${API}/hex`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+  // This creates flat edges on top and bottom, points on left and right
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI) / 3 // 0, 60, 120, 180, 240, 300 degrees
+    vertices.push({
+      x: center.x + size * Math.cos(angle),
+      y: center.y + size * Math.sin(angle),
     })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const rawData: number[][][] = await response.json()
-
-    // transformar [[x],[y],[z]] -> {x,y}
-    const data: PixelCoord[] = rawData.map((colVector) => ({
-      x: colVector[0][0],
-      y: colVector[1][0],
-    }))
-
-    return data
-  } catch (error) {
-    console.error("Error fetching hex vertices:", error)
-    return []
   }
+
+  return vertices
 }
 
-export const createFloorMeshes = async (): Promise<THREE.Mesh[]> => {
-  try {
-    const response = await fetch(`${API}/piso`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+/**
+ * Get the 3 vertices of a triangular sector within a hexagon
+ * A hexagon is divided into 6 triangular sectors by connecting
+ * the center to each pair of consecutive vertices
+ *
+ * @param center - Center point of the hexagon
+ * @param size - Radius of the hexagon
+ * @param sectorIndex - Sector index (0-5, clockwise from top)
+ * @returns Array of 3 vertices [center, vertex_i, vertex_(i+1)]
+ */
+export function getSectorTriangleVertices(center: PixelCoord, size: number, sectorIndex: number): PixelCoord[] {
+  const hexVerts = getHexVertices(center, size)
+  const nextIndex = (sectorIndex + 1) % 6
 
-    const rawData: number[][][][] = await response.json();
-
-    // cada hexágono
-    const meshes: THREE.Mesh[] = rawData.map(hex => {
-      const vertices: PixelCoord[] = hex.map(v => ({ x: v[0][0], y: v[1][0] }));
-
-      // crear Shape
-      const shape = new THREE.Shape();
-      shape.moveTo(vertices[0].x, vertices[0].y);
-      for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y);
-      shape.closePath();
-
-      // extruir
-      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
-      const material = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
-      const mesh = new THREE.Mesh(geometry, material);
-
-      return mesh;
-    });
-
-    return meshes;
-  } catch (err) {
-    console.error("Error fetching floor:", err);
-    return [];
-  }
-};
-
-
+  // Triangle: [center, current vertex, next vertex]
+  return [center, hexVerts[sectorIndex], hexVerts[nextIndex]]
+}
 
 /**
  * Convert hex coordinate to string key for maps
@@ -243,23 +207,6 @@ export function keyToSector(key: string): SectorCoord {
 }
 
 /**
- * Get the 6 triangular sector vertices for a hexagon
- * Each sector is defined by [center, vertex_i, vertex_(i+1)]
- */
-export async function getSectorVertices(
-  center: PixelCoord,
-  hexCenter: PixelCoord,
-  size: number,
-  sectorIndex: number,
-): Promise<PixelCoord[]> { // la función ahora devuelve Promise<PixelCoord[]>
-  const hexVerts = await hexVertices(center, size) // <-- await aquí
-  const nextIndex = (sectorIndex + 1) % 6
-
-  return [hexCenter, hexVerts[sectorIndex], hexVerts[nextIndex]]
-}
-
-
-/**
  * Get all 6 sectors for a hexagon
  */
 export function getHexagonSectors(hex: HexCoord): SectorCoord[] {
@@ -291,23 +238,54 @@ export function areSectorsAdjacent(a: SectorCoord, b: SectorCoord): boolean {
   return true
 }
 
+export const createFloorMeshes = async (): Promise<THREE.Mesh[]> => {
+  try {
+    const response = await fetch("http://localhost:8000/piso")
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+    const rawData: number[][][][] = await response.json()
+
+    // cada hexágono
+    const meshes: THREE.Mesh[] = rawData.map((hex) => {
+      const vertices: PixelCoord[] = hex.map((v) => ({ x: v[0][0], y: v[1][0] }))
+
+      // crear Shape
+      const shape = new THREE.Shape()
+      shape.moveTo(vertices[0].x, vertices[0].y)
+      for (let i = 1; i < vertices.length; i++) shape.lineTo(vertices[i].x, vertices[i].y)
+      shape.closePath()
+
+      // extruir
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false })
+      const material = new THREE.MeshPhongMaterial({ color: 0xaaaaaa })
+      const mesh = new THREE.Mesh(geometry, material)
+
+      return mesh
+    })
+
+    return meshes
+  } catch (err) {
+    console.error("Error fetching floor:", err)
+    return []
+  }
+}
 
 // /* ----------------------- Helpers ----------------------- */
 export async function createHexMesh(x: number, y: number) {
-  if (x == null || y == null) return null;
+  if (x == null || y == null) return null
 
-  const shape = new THREE.Shape();
+  const shape = new THREE.Shape()
   // ejemplo: hexágono unitario
-  const radius = 1;
+  const radius = 1
   for (let i = 0; i < 6; i++) {
-    const angle = (i / 6) * Math.PI * 2;
-    const vx = x + radius * Math.cos(angle);
-    const vy = y + radius * Math.sin(angle);
-    if (i === 0) shape.moveTo(vx, vy);
-    else shape.lineTo(vx, vy);
+    const angle = (i / 6) * Math.PI * 2
+    const vx = x + radius * Math.cos(angle)
+    const vy = y + radius * Math.sin(angle)
+    if (i === 0) shape.moveTo(vx, vy)
+    else shape.lineTo(vx, vy)
   }
-  shape.closePath();
+  shape.closePath()
 
-  const geometry = new THREE.ShapeGeometry(shape);
-  return geometry;
+  const geometry = new THREE.ShapeGeometry(shape)
+  return geometry
 }

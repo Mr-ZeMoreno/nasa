@@ -1,272 +1,464 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { useEffect, useRef, useState } from "react"
+import { useHabitat } from "@/store/use-habitat"
+import * as THREE from "three"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import { axialToPixel, getHexVertices, getSectorTriangleVertices, sectorToKey } from "@/lib/hex"
+import type { HexCoord, SectorCoord } from "@/lib/types"
+import { toast } from "sonner"
 
-type WsStatus =
-  | { type: "ws-open" }
-  | { type: "ws-close"; code: number; reason: string }
-  | { type: "ws-error"; message: string }
-  | { type: "ws-parse-error"; message: string };
+function createTextSprite(text: string, color = "#ffffff"): THREE.Sprite {
+  const canvas = document.createElement("canvas")
+  const context = canvas.getContext("2d")!
 
-function emitStatus(detail: WsStatus) {
-  try {
-    window.dispatchEvent(new CustomEvent("habitat-ws-status", { detail }));
-  } catch {
-    // no-op
+  canvas.width = 512
+  canvas.height = 128
+
+  
+
+  context.font = "bold 32px Arial"
+  context.fillStyle = color
+  context.textAlign = "center"
+  context.textBaseline = "middle"
+  context.fillText(text, canvas.width / 2, canvas.height / 2)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  const material = new THREE.SpriteMaterial({ map: texture })
+  const sprite = new THREE.Sprite(material)
+
+  sprite.scale.set(3, 0.75, 1)
+
+  return sprite
+}
+
+function getTriangleCentroid(vertices: { x: number; y: number }[]): { x: number; y: number } {
+  return {
+    x: (vertices[0].x + vertices[1].x + vertices[2].x) / 3,
+    y: (vertices[0].y + vertices[1].y + vertices[2].y) / 3,
   }
 }
 
 export function HabitatCanvas() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null)
+  const sceneRef = useRef<THREE.Scene | null>(null)
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
+  const controlsRef = useRef<OrbitControls | null>(null)
+  const rafRef = useRef<number | null>(null)
+  const floorGroupRef = useRef<THREE.Group | null>(null)
+  const sectorMeshesRef = useRef<THREE.Mesh[]>([])
 
-  // WebSocket refs
-  const wsRef = useRef<WebSocket | null>(null);
-  const wsUrlRef = useRef<string>("ws://localhost:8000/formas/ws/piso");
+  const { zones, placements, objects, mode, floorMatrix, addPlacement } = useHabitat()
+  const [hoveredSector, setHoveredSector] = useState<string | null>(null)
+  const [selectedObject, setSelectedObject] = useState<any>(null)
 
-  const floorGroupRef = useRef<THREE.Group | null>(null);
-  const [floor, setFloor] = useState<number[][]>([]);
-  const radius = 3;
+  const hexRadius = 1.5
+  const hexSpacing = (hexRadius * Math.sqrt(3)) / 1.75
 
-  // ---------- INIT Three.js ----------
   useEffect(() => {
-    if (!containerRef.current) return;
-    const container = containerRef.current;
+    const handleSelectObject = (event: any) => {
+      const object = event.detail
+      setSelectedObject(object)
+      toast.info(`Selected: ${object.name}. Click on ${object.slots} sector(s) to place it.`)
+    }
 
-    const width = container.clientWidth || 800;
-    const height = container.clientHeight || 600;
+    window.addEventListener("select-object", handleSelectObject)
+    return () => {
+      window.removeEventListener("select-object", handleSelectObject)
+    }
+  }, [])
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
-    sceneRef.current = scene;
+  useEffect(() => {
+    if (mode === "auto") {
+      setSelectedObject(null)
+    }
+  }, [mode])
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 0, radius * 4);
-    cameraRef.current = camera;
+  useEffect(() => {
+    if (!containerRef.current) return
+    const container = containerRef.current
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+    const width = container.clientWidth || 800
+    const height = container.clientHeight || 600
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-    directional.position.set(5, 5, 5);
-    scene.add(ambient, directional);
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color(0x0a0a0a)
+    sceneRef.current = scene
 
-    const floorGroup = new THREE.Group();
-    floorGroup.name = "floorGroup";
-    scene.add(floorGroup);
-    floorGroupRef.current = floorGroup;
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
+    camera.position.set(0, -20, 40)
+    cameraRef.current = camera
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.minDistance = 2;
-    controls.maxDistance = radius * 10;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.minPolarAngle = 0;
-    controlsRef.current = controls;
+    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    renderer.setSize(width, height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.2
+    container.appendChild(renderer.domElement)
+    rendererRef.current = renderer
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4)
+    scene.add(ambient)
+
+    const hemisphere = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5)
+    scene.add(hemisphere)
+
+    const directional1 = new THREE.DirectionalLight(0xffffff, 0.8)
+    directional1.position.set(10, 15, 10)
+    directional1.castShadow = true
+    directional1.shadow.mapSize.width = 2048
+    directional1.shadow.mapSize.height = 2048
+    directional1.shadow.camera.near = 0.5
+    directional1.shadow.camera.far = 500
+    directional1.shadow.camera.left = -50
+    directional1.shadow.camera.right = 50
+    directional1.shadow.camera.top = 50
+    directional1.shadow.camera.bottom = -50
+    scene.add(directional1)
+
+    const directional2 = new THREE.DirectionalLight(0x4a9eff, 0.3)
+    directional2.position.set(-10, 10, -10)
+    scene.add(directional2)
+
+    const floorGroup = new THREE.Group()
+    floorGroup.name = "floorGroup"
+    scene.add(floorGroup)
+    floorGroupRef.current = floorGroup
+
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true
+    controls.dampingFactor = 0.05
+    controls.minDistance = 10
+    controls.maxDistance = 100
+    controls.maxPolarAngle = Math.PI / 2.2
+    controls.minPolarAngle = 0
+    controlsRef.current = controls
 
     const handleResize = () => {
-      if (!cameraRef.current || !rendererRef.current || !containerRef.current) return;
-      const w = containerRef.current.clientWidth || 800;
-      const h = containerRef.current.clientHeight || 600;
-      cameraRef.current.aspect = w / h;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(w, h);
-    };
-    window.addEventListener("resize", handleResize);
+      if (!cameraRef.current || !rendererRef.current || !containerRef.current) return
+      const w = containerRef.current.clientWidth || 800
+      const h = containerRef.current.clientHeight || 600
+      cameraRef.current.aspect = w / h
+      cameraRef.current.updateProjectionMatrix()
+      rendererRef.current.setSize(w, h)
+    }
+    window.addEventListener("resize", handleResize)
 
     const animate = () => {
-      if (cameraRef.current) {
-        const angle = 0.001;
-        const x = cameraRef.current.position.x;
-        const z = cameraRef.current.position.z;
-        const radiusCam = Math.sqrt(x * x + z * z);
-        const theta = Math.atan2(z, x) + angle;
-        cameraRef.current.position.x = radiusCam * Math.cos(theta);
-        cameraRef.current.position.z = radiusCam * Math.sin(theta);
-        cameraRef.current.lookAt(0, 0, 0);
-      }
-      controls.update();
-      renderer.render(scene, camera);
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
+      controls.update()
+      renderer.render(scene, camera)
+      rafRef.current = requestAnimationFrame(animate)
+    }
+    rafRef.current = requestAnimationFrame(animate)
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", handleResize)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-      // limpiar geometrías/materiales del piso
       if (floorGroupRef.current) {
         while (floorGroupRef.current.children.length) {
-          const obj = floorGroupRef.current.children.pop()!;
-          (obj as any).geometry?.dispose?.();
-          const m = (obj as any).material;
-          if (Array.isArray(m)) m.forEach((mm: any) => mm?.dispose?.());
-          else m?.dispose?.();
+          const obj = floorGroupRef.current.children.pop()!
+          ;(obj as any).geometry?.dispose?.()
+          const m = (obj as any).material
+          if (Array.isArray(m)) m.forEach((mm: any) => mm?.dispose?.())
+          else m?.dispose?.()
         }
       }
 
-      // quitar canvas del DOM
       if (rendererRef.current) {
-        const canvas = rendererRef.current.domElement;
-        canvas?.parentElement?.removeChild(canvas);
+        const canvas = rendererRef.current.domElement
+        canvas?.parentElement?.removeChild(canvas)
       }
-      rendererRef.current?.dispose();
-      sceneRef.current = null;
-      rendererRef.current = null;
-      cameraRef.current = null;
-      controlsRef.current = null;
-    };
-  }, [radius]);
+      rendererRef.current?.dispose()
+      sceneRef.current = null
+      rendererRef.current = null
+      cameraRef.current = null
+      controlsRef.current = null
+    }
+  }, [])
 
-  // ---------- WebSocket (piso) ----------
   useEffect(() => {
-    // Evita abrir 2 veces en StrictMode
-    if (wsRef.current) return;
+    const renderer = rendererRef.current
+    const camera = cameraRef.current
+    const scene = sceneRef.current
 
-    const ws = new WebSocket(wsUrlRef.current);
-    wsRef.current = ws;
+    if (!renderer || !camera || !scene || mode !== "manual") {
+      return
+    }
 
-    ws.onopen = () => {
-      emitStatus({ type: "ws-open" });
-      try {
-        ws.send(JSON.stringify({ type: "get_floor" }));
-      } catch {
-        // no-op
-      }
-    };
+    const raycaster = new THREE.Raycaster()
+    const mouse = new THREE.Vector2()
 
-    ws.onmessage = (event: MessageEvent) => {
-      try {
-        const msg = JSON.parse(String(event.data));
-        if (msg?.type === "floor" && Array.isArray(msg?.matrix)) {
-          setFloor(msg.matrix);
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!selectedObject) return
+
+      const rect = renderer.domElement.getBoundingClientRect()
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+
+      raycaster.setFromCamera(mouse, camera)
+      const intersects = raycaster.intersectObjects(sectorMeshesRef.current, false)
+
+      if (intersects.length > 0) {
+        const intersected = intersects[0].object as THREE.Mesh
+        const userData = intersected.userData
+
+        if (userData.sectorKey && !userData.isOccupied) {
+          if (hoveredSector !== userData.sectorKey) {
+            if (hoveredSector) {
+              const prevMesh = sectorMeshesRef.current.find((m) => m.userData.sectorKey === hoveredSector)
+              if (prevMesh && prevMesh.material instanceof THREE.MeshStandardMaterial) {
+                prevMesh.material.emissive.setHex(0x000000)
+              }
+            }
+
+            setHoveredSector(userData.sectorKey)
+            if (intersected.material instanceof THREE.MeshStandardMaterial) {
+              intersected.material.emissive.setHex(0x4a9eff)
+              intersected.material.emissiveIntensity = 0.3
+            }
+          }
+          renderer.domElement.style.cursor = "pointer"
+        } else {
+          renderer.domElement.style.cursor = "not-allowed"
         }
-      } catch (e) {
-        const message = (e as Error)?.message ?? "parse error";
-        emitStatus({ type: "ws-parse-error", message });
-      }
-    };
-
-    ws.onclose = (ev: CloseEvent) => {
-      emitStatus({ type: "ws-close", code: ev.code, reason: ev.reason });
-    };
-
-    ws.onerror = (ev: Event) => {
-      const maybe = ev as unknown as { message?: string; error?: unknown; type?: string };
-      const fromErrorObj =
-        (maybe?.error as any)?.message ||
-        (maybe?.error as any)?.toString?.() ||
-        undefined;
-
-      const message =
-        maybe?.message ||
-        fromErrorObj ||
-        `type=${maybe?.type || "error"}`;
-
-      emitStatus({ type: "ws-error", message });
-    };
-
-    // keep-alive
-    const ping = setInterval(() => {
-      try {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "ping" }));
+      } else {
+        if (hoveredSector) {
+          const prevMesh = sectorMeshesRef.current.find((m) => m.userData.sectorKey === hoveredSector)
+          if (prevMesh && prevMesh.material instanceof THREE.MeshStandardMaterial) {
+            prevMesh.material.emissive.setHex(0x000000)
+          }
+          setHoveredSector(null)
         }
-      } catch {
-        // no-op
+        renderer.domElement.style.cursor = "default"
       }
-    }, 20000);
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      if (!selectedObject) {
+        toast.warning("Please select an object to place first")
+        return
+      }
+
+      const rect = renderer.domElement.getBoundingClientRect()
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+
+      raycaster.setFromCamera(mouse, camera)
+      const intersects = raycaster.intersectObjects(sectorMeshesRef.current, false)
+
+      if (intersects.length > 0) {
+        const intersected = intersects[0].object
+        const userData = intersected.userData
+
+        if (userData.sectorCoord && !userData.isOccupied) {
+          const sectorCoord: SectorCoord = userData.sectorCoord
+
+          const zone = zones.find((z) =>
+            z.cells.some((cell: HexCoord) => cell.q === sectorCoord.hex.q && cell.r === sectorCoord.hex.r),
+          )
+
+          if (zone) {
+            const placement = {
+              id: `placement-${Date.now()}`,
+              objectId: selectedObject.id,
+              zoneId: zone.id,
+              sectors: [sectorCoord],
+            }
+
+            addPlacement(placement)
+            toast.success(`Placed ${selectedObject.name}`)
+            setSelectedObject(null)
+            setHoveredSector(null)
+          } else {
+            toast.error("Cannot place object: sector not in any zone")
+          }
+        } else if (userData.isOccupied) {
+          toast.warning("This sector is already occupied")
+        }
+      }
+    }
+
+    renderer.domElement.addEventListener("mousemove", handleMouseMove)
+    renderer.domElement.addEventListener("click", handleClick)
 
     return () => {
-      clearInterval(ping);
-      try {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close(1000, "cleanup");
-        }
-      } catch {
-        // no-op
-      }
-      wsRef.current = null;
-    };
-  }, []);
-
-  // Utilidad: hex "flat-top"
-  function buildHexShape(r: number, a0 = 0): THREE.Shape {
-    const s = new THREE.Shape();
-    const pts: THREE.Vector2[] = [];
-    for (let i = 0; i < 6; i++) {
-      const a = a0 + (i * Math.PI) / 3;
-      pts.push(new THREE.Vector2(r * Math.cos(a), r * Math.sin(a)));
+      renderer.domElement.removeEventListener("mousemove", handleMouseMove)
+      renderer.domElement.removeEventListener("click", handleClick)
+      renderer.domElement.style.cursor = "default"
     }
-    s.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < 6; i++) s.lineTo(pts[i].x, pts[i].y);
-    s.closePath();
-    return s;
-  }
+  }, [mode, selectedObject, zones, addPlacement, hoveredSector])
 
-  // ---------- Renderizar piso ----------
   useEffect(() => {
-    const scene = sceneRef.current;
-    const floorGroup = floorGroupRef.current;
-    if (!scene || !floorGroup) return;
+    const scene = sceneRef.current
+    const floorGroup = floorGroupRef.current
+    if (!scene || !floorGroup) return
 
-    // limpiar grupo (geometrías/materiales)
     while (floorGroup.children.length) {
-      const obj = floorGroup.children.pop()!;
-      (obj as any).geometry?.dispose?.();
-      const m = (obj as any).material;
-      if (Array.isArray(m)) m.forEach((mm: any) => mm?.dispose?.());
-      else m?.dispose?.();
+      const obj = floorGroup.children.pop()!
+      ;(obj as any).geometry?.dispose?.()
+      const m = (obj as any).material
+      if (Array.isArray(m)) m.forEach((mm: any) => mm?.dispose?.())
+      else m?.dispose?.()
     }
+    sectorMeshesRef.current = []
 
-    if (!floor || floor.length === 0) return;
+    if (!zones || zones.length === 0) return
 
-    const hexR = 1;
-    const a0 = 0;
-    const shape = buildHexShape(hexR, a0);
-    const baseGeom = new THREE.ShapeGeometry(shape);
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const occupiedSectors = new Map<string, string>()
+    placements.forEach((placement) => {
+      placement.sectors.forEach((sector) => {
+        occupiedSectors.set(sectorToKey(sector), placement.objectId)
+      })
+    })
 
-    floor.forEach((center, idx) => {
-      if (!Array.isArray(center) || center.length < 2) return;
-      const [cx, cy] = center;
+    zones.forEach((zone) => {
+      zone.cells.forEach((cell: HexCoord) => {
+        const center = axialToPixel(cell, hexSpacing)
+        const hexVerts = getHexVertices(center, hexRadius)
 
-      const fillMat = new THREE.MeshStandardMaterial({
-        color: 0x3a7bd5,
-        roughness: 0.85,
-        metalness: 0.1,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.95,
-      });
-      // variación de color por índice
-      fillMat.color.setHSL(((idx * 37) % 360) / 360, 0.6, 0.5);
+        const hexShape = new THREE.Shape()
+        hexShape.moveTo(hexVerts[0].x, hexVerts[0].y)
+        for (let i = 1; i < hexVerts.length; i++) {
+          hexShape.lineTo(hexVerts[i].x, hexVerts[i].y)
+        }
+        hexShape.closePath()
 
-      const mesh = new THREE.Mesh(baseGeom.clone(), fillMat);
-      mesh.position.set(cx, cy, 0.001);
-      floorGroup.add(mesh);
+        const extrudeSettings = {
+          depth: 0.2,
+          bevelEnabled: true,
+          bevelThickness: 0.05,
+          bevelSize: 0.05,
+          bevelSegments: 2,
+        }
 
-      const pts: THREE.Vector3[] = [];
-      for (let i = 0; i <= 6; i++) {
-        const a = a0 + (i * Math.PI) / 3;
-        pts.push(new THREE.Vector3(cx + hexR * Math.cos(a), cy + hexR * Math.sin(a), 0.002));
-      }
-      const edgeGeom = new THREE.BufferGeometry().setFromPoints(pts);
-      const loop = new THREE.Line(edgeGeom, edgeMat);
-      floorGroup.add(loop);
-    });
-  }, [floor]);
+        const baseGeometry = new THREE.ExtrudeGeometry(hexShape, extrudeSettings)
+        const baseMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(zone.color || "#c0c7d1ff").multiplyScalar(0.2),
+          roughness: 0.8,
+          metalness: 0.3,
+        })
+        const baseMesh = new THREE.Mesh(baseGeometry, baseMaterial)
+        baseMesh.position.z = -0.2
+        baseMesh.castShadow = true
+        baseMesh.receiveShadow = true
+        floorGroup.add(baseMesh)
 
-  return <div ref={containerRef} className="w-full h-full" />;
+        const outlinePoints: THREE.Vector3[] = []
+        hexVerts.forEach((v) => {
+          outlinePoints.push(new THREE.Vector3(v.x, v.y, 0.3))
+        })
+        outlinePoints.push(new THREE.Vector3(hexVerts[0].x, hexVerts[0].y, 0.3))
+
+        const outlineGeom = new THREE.BufferGeometry().setFromPoints(outlinePoints)
+        const outlineMat = new THREE.LineBasicMaterial({ color: 0x4a9eff, linewidth: 2 })
+        const outlineMesh = new THREE.Line(outlineGeom, outlineMat)
+        floorGroup.add(outlineMesh)
+
+        for (let sectorIdx = 0; sectorIdx < 6; sectorIdx++) {
+          const sectorCoord: SectorCoord = { hex: cell, sector: sectorIdx }
+          const sectorKey = sectorToKey(sectorCoord)
+          const isOccupied = occupiedSectors.has(sectorKey)
+          const objectId = occupiedSectors.get(sectorKey)
+
+          const triangleVerts = getSectorTriangleVertices(center, hexRadius, sectorIdx)
+
+          const triangleShape = new THREE.Shape()
+          triangleShape.moveTo(triangleVerts[0].x, triangleVerts[0].y)
+          triangleShape.lineTo(triangleVerts[1].x, triangleVerts[1].y)
+          triangleShape.lineTo(triangleVerts[2].x, triangleVerts[2].y)
+          triangleShape.closePath()
+
+          const sectorExtrudeSettings = {
+            depth: isOccupied ? 0.8 : 0.1,
+            bevelEnabled: true,
+            bevelThickness: 0.02,
+            bevelSize: 0.02,
+            bevelSegments: 1,
+          }
+
+          const geometry = new THREE.ExtrudeGeometry(triangleShape, sectorExtrudeSettings)
+
+          let color = new THREE.Color(zone.color || "#3a7bd5")
+          if (isOccupied) {
+            const obj = objects.find((o) => o.id === objectId)
+            if (obj) {
+              const tag = obj.tags?.[0] || "default"
+              const tagColors: Record<string, number> = {
+                sleep: 0x6b5b95,
+                galley: 0xf39c12,
+                hygiene: 0x3498db,
+                eclss: 0x2ecc71,
+                exercise: 0xe74c3c,
+                medical: 0xe67e22,
+                stowage: 0x95a5a6,
+                command: 0x9b59b6,
+              }
+              color = new THREE.Color(tagColors[tag] || 0x7f8c8d)
+            }
+          } else {
+            color.multiplyScalar(0.3)
+          }
+
+          const material = new THREE.MeshStandardMaterial({
+            color,
+            roughness: isOccupied ? 0.5 : 0.7,
+            metalness: isOccupied ? 0.4 : 0.2,
+            side: THREE.FrontSide,
+            transparent: !isOccupied,
+            opacity: isOccupied ? 1.0 : 0.5,
+            emissive: color,
+            emissiveIntensity: isOccupied ? 0.1 : 0,
+          })
+
+          const mesh = new THREE.Mesh(geometry, material)
+          mesh.position.z = 0
+          mesh.castShadow = true
+          mesh.receiveShadow = true
+          mesh.userData = { sectorKey, sectorCoord, isOccupied, objectId }
+          floorGroup.add(mesh)
+          sectorMeshesRef.current.push(mesh)
+
+          if (isOccupied && objectId) {
+            const obj = objects.find((o) => o.id === objectId)
+            if (obj) {
+              const centroid = getTriangleCentroid(triangleVerts)
+              const sprite = createTextSprite(obj.name, "#ffffff")
+              sprite.position.set(centroid.x, centroid.y, 1.2)
+              floorGroup.add(sprite)
+            }
+          }
+
+          const centerVec = new THREE.Vector3(center.x, center.y, 0.05)
+          const vertexVec = new THREE.Vector3(hexVerts[sectorIdx].x, hexVerts[sectorIdx].y, 0.05)
+          const lineGeom = new THREE.BufferGeometry().setFromPoints([centerVec, vertexVec])
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x2a2a2a, linewidth: 1 })
+          const line = new THREE.Line(lineGeom, lineMat)
+          floorGroup.add(line)
+        }
+      })
+    })
+  }, [zones, placements, objects, hexRadius])
+
+  return (
+    <div className="relative w-full h-full">
+      <div ref={containerRef} className="w-full h-full" />
+
+      {mode === "manual" && (
+        <div className="absolute top-4 left-4 bg-card/90 backdrop-blur p-4 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Manual Mode: Click on sectors to place objects</p>
+          <p className="text-xs text-muted-foreground mt-1">Each hexagon has 6 triangular sectors</p>
+          {selectedObject && (
+            <p className="text-xs text-primary mt-2 font-medium">
+              Selected: {selectedObject.name} ({selectedObject.slots}{" "}
+              {selectedObject.slots === 1 ? "sector" : "sectors"})
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
