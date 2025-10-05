@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import * as THREE from "three"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { useHabitat } from "@/store/use-habitat"
 import { axialToPixel, hexVertices, hexToKey } from "@/lib/hex"
 import type { HexCoord, Zone, HabitatObject } from "@/lib/types"
@@ -110,7 +110,7 @@ export function HabitatCanvas() {
 
       raycaster.setFromCamera(mouse, camera)
 
-      const hexagons = scene.children.filter((child) => child.userData.type === "hexagon")
+      const hexagons = scene.children.filter((child: THREE.Object3D) => child.userData.type === "hexagon")
       const intersects = raycaster.intersectObjects(hexagons, false)
 
       if (intersects.length > 0) {
@@ -188,14 +188,13 @@ export function HabitatCanvas() {
 
     const scene = sceneRef.current
 
-    // Clear previous hexagons
-    const hexagons = scene.children.filter((child) => child.userData.type === "hexagon")
-    hexagons.forEach((hex) => scene.remove(hex))
+    const hexagons = scene.children.filter((child: THREE.Object3D) => child.userData.type === "hexagon")
+    hexagons.forEach((hex: THREE.Object3D) => scene.remove(hex))
 
     // Render zones
     zones.forEach((zone) => {
       zone.cells.forEach((cell) => {
-        const isHovered = hoveredCell && cell.q === hoveredCell.q && cell.r === hoveredCell.r
+        const isHovered = hoveredCell ? cell.q === hoveredCell.q && cell.r === hoveredCell.r : false
         const hexMesh = createHexagonMesh(cell, zone, isHovered)
         scene.add(hexMesh)
       })
@@ -208,17 +207,15 @@ export function HabitatCanvas() {
 
     const scene = sceneRef.current
 
-    // Clear previous objects
-    const objectMeshes = scene.children.filter((child) => child.userData.type === "object")
-    objectMeshes.forEach((obj) => scene.remove(obj))
+    const objectMeshes = scene.children.filter((child: THREE.Object3D) => child.userData.type === "object")
+    objectMeshes.forEach((obj: THREE.Object3D) => scene.remove(obj))
 
-    // Render placed objects
     placements.forEach((placement) => {
       const object = objects.find((o) => o.id === placement.objectId)
       if (!object) return
 
       placement.cells.forEach((cell, index) => {
-        const objectMesh = createObjectMesh(cell, object.name, index === 0)
+        const objectMesh = createObjectMesh(cell, object, index === 0)
         scene.add(objectMesh)
       })
     })
@@ -307,7 +304,7 @@ function createHexagonMesh(cell: HexCoord, zone: Zone, isHovered: boolean): THRE
 }
 
 // Create object mesh for placed objects
-function createObjectMesh(cell: HexCoord, objectName: string, showLabel: boolean): THREE.Mesh {
+function createObjectMesh(cell: HexCoord, object: HabitatObject, showLabel: boolean): THREE.Mesh {
   const HEX_SIZE = 0.8
   const pixel = axialToPixel(cell, 1)
 
@@ -338,9 +335,70 @@ function createObjectMesh(cell: HexCoord, objectName: string, showLabel: boolean
 
   const mesh = new THREE.Mesh(geometry, material)
   mesh.position.set(pixel.x, pixel.y, 0.15)
-  mesh.userData = { type: "object", cell, objectName }
+  mesh.userData = { type: "object", cell, objectName: object.name }
+
+  if (showLabel) {
+    const label = getObjectLabel(object.name)
+    const sprite = createTextSprite(label)
+    sprite.position.set(0, 0, 0.5) // Position above the hexagon
+    mesh.add(sprite)
+  }
 
   return mesh
+}
+
+function createTextSprite(text: string): THREE.Sprite {
+  const canvas = document.createElement("canvas")
+  const context = canvas.getContext("2d")!
+
+  // Set canvas size
+  canvas.width = 256
+  canvas.height = 128
+
+  // Configure text style
+  context.font = "bold 48px Arial"
+  context.fillStyle = "#ffffff"
+  context.textAlign = "center"
+  context.textBaseline = "middle"
+
+  // Draw text with shadow for better visibility
+  context.shadowColor = "rgba(0, 0, 0, 0.8)"
+  context.shadowBlur = 8
+  context.shadowOffsetX = 2
+  context.shadowOffsetY = 2
+  context.fillText(text, canvas.width / 2, canvas.height / 2)
+
+  // Create texture from canvas
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+
+  // Create sprite material
+  const spriteMaterial = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  })
+
+  const sprite = new THREE.Sprite(spriteMaterial)
+  sprite.scale.set(1.5, 0.75, 1) // Adjust scale for readability
+
+  return sprite
+}
+
+function getObjectLabel(name: string): string {
+  const labelMap: Record<string, string> = {
+    "Sleep Pod": "SLEEP",
+    "Galley Unit": "GALLEY",
+    "Hygiene Station": "HYGIENE",
+    "ECLSS Rack": "ECLSS",
+    "Exercise Equipment": "EXERCISE",
+    "Medical Bay": "MEDICAL",
+    "Stowage Rack": "STORAGE",
+    "Command Console": "COMMAND",
+  }
+
+  return labelMap[name] || name.toUpperCase().substring(0, 6)
 }
 
 // Find contiguous cells starting from a seed cell
