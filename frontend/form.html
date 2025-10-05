@@ -74,9 +74,9 @@
         </div>
       </div>
 
-      <!-- Preferencias -->  
+      <!-- Preferencias ejercicios-->  
       <div class="form-group">
-        <p>Elija según sus preferencias (máximo 2)</p>
+        <p>Elija ejercicios según sus preferencias (máximo 2)</p>
         <div>
           <input type="checkbox" id="aerobic" name="aerobic" />
           <label for="aerobic">Aerobic exercises</label>
@@ -113,6 +113,42 @@
     });
     });
     </script>
+
+<!-- Preferencias ejercicios-->  
+      <div class="form-group">
+        <p>Elija actividades recreativas según sus preferencias (máximo 2)</p>
+        <div>
+          <input type="checkbox" id="personal_recreation" name="personal_recreation" />
+          <label for="personal_recreation">Personal Recreation</label>
+        </div>
+        <div>
+          <input type="checkbox" id="tabletop_games" name="tabletop_games" />
+          <label for="tabletop_games">Tabletop Games</label>
+        </div>
+        <div>
+          <input type="checkbox" id="movie_night" name="movie_night" />
+          <label for="movie_night">Video/Movie viewing</label>
+        </div>
+        <div>
+          <input type="checkbox" id="window_viewing" name="window_viewing" />
+          <label for="window_viewing">Window Viewing</label>
+        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const checkboxes = document.querySelectorAll('.form-group input[type="checkbox"]');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+        const checked = document.querySelectorAll('.form-group input[type="checkbox"]:checked');
+        if (checked.length > 2) {
+            e.target.checked = false;
+            alert('Solo puedes seleccionar un máximo de 2 opciones.');
+        }
+        });
+    });
+    });
+    </script>        
+        </div>
 
       <!-- Notas -->
       <div class="form-group">
