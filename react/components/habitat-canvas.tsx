@@ -200,20 +200,20 @@ export function HabitatCanvas() {
         return;
       }
 
-      // validación
-const validation = validatePlacement(selectedObject, zone, cells, zones, placements, objects);
-const hardErrors = validation.results.filter((r) => r.severity === "hard" && !r.ok);
-const softErrors = validation.results.filter((r) => r.severity !== "hard" && !r.ok);
+          // validación
+    const validation = validatePlacement(selectedObject, zone, cells, zones, placements, objects);
+    const hardErrors = validation.results.filter((r) => r.severity === "hard" && !r.ok);
+    const softErrors = validation.results.filter((r) => r.severity !== "hard" && !r.ok);
 
-if (hardErrors.length) {
-  // Muestra el primer error "hard" con detalle
-  const first = hardErrors[0];
-  toast.error(first.message || "Colocación no permitida", {
-    description: first.hint || "Revisa los requisitos de la zona u objeto.",
-    duration: 6000,
-  });
-  return;
-}
+    if (hardErrors.length) {
+      // Muestra el primer error "hard" con detalle
+      const first = hardErrors[0];
+      toast.error(first.message || "Colocación no permitida", {
+        description: first.hint || "Revisa los requisitos de la zona u objeto.",
+        duration: 6000,
+      });
+      return;
+    }
 
 // Opcional: avisar con warning si hay errores no críticos
 if (softErrors.length) {
