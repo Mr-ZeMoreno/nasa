@@ -1,26 +1,15 @@
 import type { HabitatObject } from "@/lib/types"
+const API = process.env.NEXT_PUBLIC_CATALOG_API ?? "http://localhost:8000/habitat/objects";
 
-const API = "http://localhost:8000/habitat/objects"
+export async function getObjectsForFunctions(functions: string[], crew: number) {
+  const url = new URL(API);
+  functions.forEach(f => url.searchParams.append("functions", f));
+  url.searchParams.set("crew", String(crew));
 
-export const getObjectsForFunctions = async (
-  functions: string[],
-  crew: number
-): Promise<HabitatObject[]> => {
-  try {
-    // Construir query string
-    const params = new URLSearchParams()
-    functions.forEach(f => params.append("functions", f))
-    params.append("crew", crew.toString())
-
-    const response = await fetch(`${API}?${params.toString()}`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const data: HabitatObject[] = await response.json()
-    return data
-  } catch (error) {
-    console.error("Error fetching catalog:", error)
-    return []
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "<no body>");
+    throw new Error(`HTTP ${res.status} - ${txt}`);
   }
+  return res.json();
 }
