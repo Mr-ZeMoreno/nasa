@@ -18,5 +18,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Aplicar a los grupos
   limitarGrupo('ejercicios', 2);
   limitarGrupo('recreativas', 2);
-
+ 
 });
