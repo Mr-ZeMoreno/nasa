@@ -13,19 +13,25 @@ def f_y(y, radio, lado):
     return y + radio * math.sin(2 * math.pi * lado / 6)
 
 
-def hexagono(centro: Punto, radio: float, z: float):
+def hexagono(centro: Punto, radio: float):
     o = Objeto()
     for i in range(6):
         x = f_x(centro.x, radio, i)
         y = f_y(centro.y, radio, i)
+        o.add_vertice(Punto([[x], [y], [0]]))
+
+    for i in range(6):
+        x = f_x(centro.x, radio, i)
+        y = f_y(centro.y, radio, i)
         o.add_vertice(Punto([[x], [y], [centro.z]]))
+
     return o
 
 
-def piso(radio: float):
+def piso(radio: float, espesor: float):
     # hexágono central
     centros = [Punto([[0], [0], [0]])]
-    central = hexagono(Punto([[0], [0], [0]]), radio, 1)
+    central = hexagono(Punto([[0], [0], [espesor]]), radio)
 
     # calcular centros vecinos usando puntos medios
     for i in range(6):
@@ -35,4 +41,4 @@ def piso(radio: float):
         centros.append(Punto([[2 * mx], [2 * my], [0]]))
 
     # generar hexágonos a partir de esos centros
-    return [hexagono(c, radio, 1) for c in centros]
+    return [hexagono(c, radio) for c in centros]
