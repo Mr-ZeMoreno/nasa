@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 
-  <!-- Styles (todo lo que estaba en <style> ahora vive aquí) -->
-<link rel="stylesheet" href="Styles/indexStyle.css"/>
+  <!-- Styles (todo lo que estaba en <style> ahora vive aquí aaa) -->
+<link rel="stylesheet" href="/Styles/indexStyle.css" />
 
 
   <!-- Three.js -->
@@ -25,8 +25,9 @@
       <div class="hero-label">Diseño Espacial Avanzado</div>
       <h1 class="float-animation">HabitatX</h1>
       <p>Herramienta visual para el diseño de hábitats espaciales modulares. Crea, personaliza y optimiza tu estación espacial basada en tus prioridades.</p>
-      <!-- Abre el formulario en otra pestaña -->
-      <a href="form.html" target="_blank" rel="noopener" class="cta-button">Comenzar Diseño</a>
+      <!-- Hero Section CTA aaa-->
+      <a href="/" class="cta-button">Comenzar Diseño</a>
+
     </div>
   </section>
 
@@ -145,7 +146,8 @@
     <div class="footer-cta-content">
       <h2>Prototipa Tu Hábitat Ahora</h2>
       <p>Comienza a diseñar tu estación espacial personalizada. Define tus prioridades y observa cómo tu hábitat toma forma.</p>
-      <a href="http://localhost:3000/" target="_blank" rel="noopener" class="cta-button">Comenzar Diseño</a>
+      <a href="/" class="cta-button">Comenzar Diseño</a> <!--aaa-->
+
     </div>
   </section>
 
@@ -201,7 +203,8 @@
     });
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+    //scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+    scene.add(ambientLight)
     const pointLight1 = new THREE.PointLight(0x00ffcc, 1, 100); pointLight1.position.set(5, 5, 5); scene.add(pointLight1);
     const pointLight2 = new THREE.PointLight(0x7c3aed, 0.8, 100); pointLight2.position.set(-5, -5, -5); scene.add(pointLight2);
 
